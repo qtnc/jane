@@ -1,0 +1,11 @@
+__pycache__
+Jane/build/
+*.pyc
+*.pyd
+*.pyo
+*.zip
+*.exe
+*.log
+out*.txt
+test*.*
+*_.*

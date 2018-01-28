@@ -1,5 +1,5 @@
 # Jane: just another editor
-Jane is a text editor especially made to be accessible to screen readers
+Jane is a text editor especially made to be accessible to screen readers.
 It is made in python 3 and is using wxPython for its GUI interface.
 
 Just another editor, why ? because it is just another trial after my two previous more or less failed attempts: [6pad](http://github.com/qtnc/6pad) in 2012-2013 and [6pad++](http://github.com/qtnc/6pad2) in 2015-2016.
@@ -62,6 +62,7 @@ However, I find its interface not as easy as it is said; menus are especially fu
 # Contributing
 If you have great ideas, found a bug or want to improve documentation, feel free to post issues and send pull requests. You can of course also write me an e-mail directly.
 Don't hesitate to also share extensions you made.
+
 Have fun !
 
 # License

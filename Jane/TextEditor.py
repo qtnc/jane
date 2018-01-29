@@ -1,6 +1,9 @@
 import re, wx
 from TextFormat import rbol
 
+def bellFalsy (x):
+	if not x: wx.Bell()
+
 def rsearch(reg, value, end, start=0, nth=-1):
 		matches = []
 		while True:
@@ -217,22 +220,24 @@ class TextEditor(wx.TextCtrl):
 	
 	def goToNextParagraph(self, select=False, reg=re.compile(r'\n\s*?\n')):
 		anchor, pos = self.GetSelection2()
-		if pos>=self.GetLastPosition(): return wx.Bell()
+		if pos>=self.GetLastPosition(): return False
 		m = reg.search(self.GetValue(), pos)
 		pos = m.end()+1 if m else self.GetLastPosition()
 		if select: self.SetSelection(anchor, max(0, pos -1))
 		else: self.SetInsertionPoint(max(0, pos -1))
+		return True
 	
 	def goToPrevParagraph(self, select=False, reg=re.compile(r'\n\s*?\n')):
 		anchor, pos = self.GetSelection2()
-		if pos<=0: return wx.Bell()
+		if pos<=0: return False
 		m = rsearch(reg, self.GetValue(), pos, nth=-2)
 		pos = m.end()+1 if m else 0
 		if select: self.SetSelection(anchor, max(0, pos -1))
 		else: self.SetInsertionPoint(max(0, pos -1))
+		return True
 	
 	def goToInnerIndent(self, select=False):
-		getLevel = self.document.flavor.getLevelCalc(1)
+		getLevel = self.document.type.getLevelCalc(1)
 		anchor, pos = self.GetSelection2()
 		_, __, li = self.PositionToXY(pos)
 		_, __, nl = self.PositionToXY(self.GetLastPosition())
@@ -240,43 +245,53 @@ class TextEditor(wx.TextCtrl):
 		curLevel = getLevel(curline)
 		nextLine = self.GetLineText(li+1)
 		nextLevel = getLevel(nextLine)
-		if nextLevel<=curLevel or li>=nl: return wx.Bell()
+		if nextLevel<=curLevel or li>=nl: return False
 		if select: self.SetSelection(anchor, self.XYToPosition(len(nextLine), li+1))
 		else: self.SetInsertionPoint(self.XYToPosition(rbol(nextLine), li+1))
+		return True
 	
 	def goToOuterIndent (self, select=False):
-		getLevel = self.document.flavor.getLevelCalc(-1)
+		getLevel, isBlankLine  = self.document.type.getLevelCalc(-1), self.document.type.isBlankLine
 		anchor, pos = self.GetSelection2()
 		_, __, li = self.PositionToXY(pos)
-		if li<=0: return wx.Bell()
+		if li<=0: return False
 		curline = self.GetLineText(li)
 		curLevel = getLevel(curline)
 		level = curLevel
-		#if level<=0: return wx.Bell()
-		while li>=1 and level>=curLevel:
+		while li>=1:
 			li-=1
 			line = self.GetLineText(li)
 			level = getLevel(line)
+			if level<curLevel and not isBlankLine(line): break
 		if select: self.SetSelection(anchor, self.XYToPosition(0, li))
 		else: self.SetInsertionPoint(self.XYToPosition(rbol(line), li))
+		return True
 
 	def goToSameIndent (self, direction=1, select=False):
-		getLevel = self.document.flavor.getLevelCalc(direction)
+		getLevel, isBlankLine  = self.document.type.getLevelCalc(direction), self.document.type.isBlankLine
 		anchor, pos = self.GetSelection2()
 		_, __, li = self.PositionToXY(pos)
 		_, __, nl = self.PositionToXY(self.GetLastPosition())
 		curline = self.GetLineText(li)
 		curLevel = getLevel(curline)
 		level = curLevel
-		if li+direction<0 or li+direction>nl: return wx.Bell()
+		if li+direction<0 or li+direction>nl: return False
 		while li>=0 and li<=nl:
 			li+=direction
 			line = self.GetLineText(li)
 			level = getLevel(line)
-			if level<curLevel: return wx.Bell()
-			elif level==curLevel and not line.isspace(): break
+			if level<curLevel: return False
+			elif level==curLevel:
+				if isBlankLine(line): continue
+				else: break
 		if select: self.SetSelection(anchor, self.XYToPosition(self.GetLineLength(li) if direction>=1 else 0, li))
 		else: self.SetInsertionPoint(self.XYToPosition(rbol(line), li))
+		return True
+	
+	def goToLastSameIndent (self, direction=1, select=False):
+		count=0
+		while self.goToSameIndent(direction, select): count+=1
+		return count>0
 	
 	def mark (self):
 		self.marker = self.GetInsertionPoint()
@@ -309,35 +324,40 @@ class TextEditor(wx.TextCtrl):
 			self.onTab()
 		elif key==wx.WXK_TAB and mod==wx.MOD_SHIFT:
 			self.onShiftTab()
-		elif key==wx.WXK_HOME and mod==wx.MOD_NONE:
-			self.onHome()
-		elif key==wx.WXK_END and mod==wx.MOD_SHIFT:
-			self.onShiftEnd()
-		elif key==wx.WXK_END and mod==wx.MOD_SHIFT|wx.MOD_CONTROL:
-			self.onCtrlShiftEnd()
 		elif key==wx.WXK_BACK and mod==wx.MOD_NONE:
 			if not self.onBackspace(): e.Skip()
 		elif key==wx.WXK_DELETE and mod==wx.MOD_NONE:
 			if not self.onDelete(): e.Skip()
+		elif key==wx.WXK_HOME:
+			if mod==wx.MOD_NONE: self.onHome()
+			elif mod==wx.MOD_ALT: bellFalsy( self.goToLastSameIndent(direction=-1))
+			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: bellFalsy(self.goToLastSameIndent(direction=-1, select=True))
+			else: e.Skip()
+		elif key==wx.WXK_END:
+			if mod==wx.MOD_SHIFT: self.onShiftEnd()
+			elif mod==wx.MOD_SHIFT|wx.MOD_CONTROL: self.onCtrlShiftEnd()
+			elif mod==wx.MOD_ALT: bellFalsy(self.goToLastSameIndent())
+			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: bellFalsy(self.goToLastSameIndent(select=True))
+			else: e.Skip()
 		elif key==wx.WXK_DOWN:
-			if mod==wx.MOD_CONTROL: self.goToNextParagraph()
-			elif mod==wx.MOD_CONTROL | wx.MOD_SHIFT: self.goToNextParagraph(True)
-			elif mod==wx.MOD_ALT: self.goToSameIndent()
-			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: self.goToSameIndent(select=True)
+			if mod==wx.MOD_CONTROL: bellFalsy(self.goToNextParagraph())
+			elif mod==wx.MOD_CONTROL | wx.MOD_SHIFT: bellFalsy(self.goToNextParagraph(True))
+			elif mod==wx.MOD_ALT: bellFalsy(self.goToSameIndent())
+			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: bellFalsy(self.goToSameIndent(select=True))
 			else: e.Skip()
 		elif key==wx.WXK_UP:
-			if mod==wx.MOD_CONTROL: self.goToPrevParagraph()
-			elif mod==wx.MOD_CONTROL | wx.MOD_SHIFT: self.goToPrevParagraph(True)
-			elif mod==wx.MOD_ALT: self.goToSameIndent(direction=-1)
-			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: self.goToSameIndent(-1, True)
+			if mod==wx.MOD_CONTROL: bellFalsy(self.goToPrevParagraph())
+			elif mod==wx.MOD_CONTROL | wx.MOD_SHIFT: bellFalsy(self.goToPrevParagraph(True))
+			elif mod==wx.MOD_ALT: bellFalsy(self.goToSameIndent(direction=-1))
+			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: bellFalsy(self.goToSameIndent(-1, True))
 			else: e.Skip()
 		elif key==wx.WXK_RIGHT:
-			if mod==wx.MOD_ALT: self.goToInnerIndent()
-			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: self.goToInnerIndent(True)
+			if mod==wx.MOD_ALT: bellFalsy(self.goToInnerIndent())
+			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: bellFalsy(self.goToInnerIndent(True))
 			else: e.Skip()
 		elif key==wx.WXK_LEFT:
-			if mod==wx.MOD_ALT: self.goToOuterIndent()
-			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: self.goToOuterIndent(True)
+			if mod==wx.MOD_ALT: bellFalsy(self.goToOuterIndent())
+			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: bellFalsy(self.goToOuterIndent(True))
 			else: e.Skip()
 		elif self.document.type.onCharHook(key, mod, self, self.document): e.Skip()
 		else: e.Skip()

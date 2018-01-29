@@ -5,6 +5,7 @@ import utils
 class DefaultType:
 	def getLevel(self, line): return rbol(line)
 	def getLevelCalc(self, direction): return self.getLevel
+	def isBlankLine(self, line): return line.isspace() or not line
 	def onEnter(self, line): return 0
 	def onCharHook (self, key, mod, editor, document): pass
 
@@ -12,10 +13,11 @@ class PythonType(DefaultType):
 	def onEnter(self, line):
 		return 1 if line.endswith(':') else 0
 
-class CLikeType:
+class CLikeType(DefaultType):
 	def __init__(self):
 		self.direction=0
 		self.level=0
+	def isBlankLine(self, line, reg=re.compile(r'^[\s{}]*$')): return reg.match(line)
 	def countOpens (self, line):
 		return line.count('{')
 	def countCloses(self, line):
@@ -33,6 +35,7 @@ class CLikeType:
 		return self.getLevel
 
 class XMLType(CLikeType):
+	def isBlankLine(self, line, reg=re.compile(r'^(?:\s*</[-a-zA-Z_0-9:]+>)*\s*$')): return reg.match(line)
 	def countOpens(self, line, reg=re.compile(r'<(?!/).*?(?<!/)>')):	
 		count = len(reg.findall(line))
 		return count

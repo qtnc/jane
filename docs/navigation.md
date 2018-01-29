@@ -24,7 +24,7 @@ A paragraph is a block of text separated by at least one blank line (two line br
 
 Note that you can add Shift to select to the previous/next paragraph. This isn't possible with notepad, and neither with wordpad.
 
-# Tree-like navigation: Alt+Arrow keys
+# Tree-like navigation: Alt+Arrow keys, Alt+Home and Alt+End
 When doing programming, it is often useful to navigate by logical block. The tree-like navigation will help you doing that and also help you getting a better overview of the code you are editing.
 Most programming languages are organized into blocks nested ones into the others, forming a tree structure: in a first level we have classes, in second level methods or functions, and loop, conditional or structural blocks at third level and beyond.
 So, why not navigate in the code like we are used to navigate in tree views ?
@@ -36,5 +36,10 @@ If the previous/next line is of higher level, you have reached a border; the cur
 Alt+Left goes to the parent of current line. For example if you were inside a function, you go back to the function definition.
 Probably not very useful but  to keep symetry, Alt+Right goes to the next line but only if it is of a deeper level.
 
+Alt+Home and Alt+End go to the first or last line at the same tree level.
+It works as if pressing Alt+Up or Alt+Down repeatedly until a border is reached.
+
 In general, levels are determined by their indentation; deeper level means more indentation to the right.
-For languages where indentation doesn't matter and blocks are delimited by { and }, tree-like navigation is attempted using  { and } instead of indentation.
+
+For languages where indentation doesn't matter and blocks are delimited by { and }, tree-like navigation is attempted using  { and } instead of indentation
+The same is also attempted with XML, determining level out of `<open-tag>`, `</closing-tag>` and `<self-closing-tag/>`. Warning though, HTML5 tags that can implicitely be self-closed (e.g. `<input>`) aren't threated specially.

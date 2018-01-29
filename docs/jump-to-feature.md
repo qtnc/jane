@@ -28,12 +28,15 @@ tfd | If no file starting with tfd is found, then a file starting with T, contai
 TFo | When typing only TF in the project of this editor, we could find TextFormat.py and TextFlavor.py. To remove ambiguity, we look for a file starting with T and containing Fo.
 
 # Idead of additional syntaxes
-These syntaxes are only ideas open for discussion; they aren't implemented yet:
+These syntaxes are only ideas open for discussion; they aren't implemented yet. Give your opinion !
 
-- Search for the text "ab" in the current file using #abc or @abc or ~abc; of course, more powerful when combining with a file name, e.g. test.py@yes would jump to the first occurence of "yes" in test.py.
-- Search for "abc" as regex using /abc or :/abc (to disambiguate with file paths), + regex options with /abc/i
-- Search for "abc" only if it appears at beginning of line with ^abc
-- Search/replace with regex: s/search/replacement/options
-- Go to symbol, e.g. function declaration: #abc or @abc or %abc or &abc, + maybe different kinds of symbols according to the prefix character used. Difficulty: must be dependent of the programming language of the file currently open
-- run "dir" command and insert the result at cursor position or in a new tab: $dir or >dir
-- Compute 1+2*3 and insert the result at cursor position: =1+2*3, + why not a full monoline python expression
+- Search for the text "ab" in the current file using `#abc` or `@abc` or `~abc`; of course, more powerful when combining with a file name, e.g. `test.py@yes` would jump to the first occurence of "yes" in test.py
+- Search for "abc" as regex using `/abc` or `:/abc` (to disambiguate with file paths), + regex options with `/abc/i`
+- Search for "abc" only if it appears at beginning of line with `^abc`
+- Search/replace with regex: `s/search/replacement/options`
+- Filter by doing something like grep: `f/regex/options` or `^regex` or `~regex`.
+- Go to symbol, e.g. function declaration: `#abc` or `@abc` or `%abc` or `::abc`, + maybe different kinds of symbols according to the prefix character used. Difficulty: must be dependent of the programming language of the file currently open
+- Insert a character: `&xE9` or `&233`
+- run "dir" command and insert the result at cursor position or in a new tab: `$dir` or `>dir`
+- Compute `1+2*3` and insert the result at cursor position: `=1+2*3`, + why not a full monoline python expression
+- Replace the text field with a combo box and keep the last  10, 20 or 50 jumps performed ?

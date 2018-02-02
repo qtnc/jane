@@ -18,3 +18,5 @@ onBackspaceInIndent | unindent or clear | At the beginning of a line with indent
 ## Section extensions
 Each key in this section indicates an extension module to be loaded. The key may not have a value.
 
+You can specify a key `path`that will contain a list of paths to be appended to sys.path for module loading. Multiple paths can be separated by `os.pathsep`, i.e. `;`on windows and `:`on linux.
+

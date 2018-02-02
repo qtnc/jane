@@ -1,5 +1,5 @@
-import wx, re
-import TextFormat, TextType, MenuManager
+import wx, re, functools
+import utils, TextFormat, TextType, MenuManager
 from Document import Document
 from TextEditor import TextEditor
 from TextFindDialog import TextFindDialog
@@ -9,12 +9,16 @@ class TextDocument(Document):
 		super().__init__(*args, **kwargs)
 		self.encoding = app.config.get('text', 'encoding', fallback=TextFormat.defaultEncoding)
 		self.lineEnding = TextFormat.lineEndings.get(app.config.get('text', 'lineEnding', fallback=-1), '\r\n')
-		self.type = TextType.DefaultType()
+		self.types = [TextType.DefaultType()]
 		self.indent = app.config.getint('text', 'indentation', fallback=0)
 		self.wrap = app.config.getboolean('text', 'autowrap', fallback=False)
+		self.readOnly = False
 	
 	def initUI(self, parent, select=True):
+		getFormatMenu()
 		self.editor = TextEditor(parent, self, self.wrap)
+		self.editor.SetEditable(not self.readOnly)
+		self.editor.SetAcceleratorTable(wx.AcceleratorTable(ACCELERATOR_TABLE))
 		parent.AddPage(self.editor, text=self.name, select=select)
 	
 	def open (self, file=None, reloading=False):
@@ -36,7 +40,8 @@ class TextDocument(Document):
 			else: self.indent = TextFormat.detectIndent(data)
 		text = str(data, encoding=self.encoding, errors='replace')
 		if self.lineEnding!='\n': text = '\n'.join(text.split(self.lineEnding))
-		if not reloading: self.type  = TextType.getTextType(self.file, text)
+		if not reloading: self.types  = TextType.getTextTypes(self.file, text)
+		text = functools.reduce(lambda tx, tp: tp.onLoad(tx, self), self.types, text)
 		if self.editor:
 			start, end = self.editor.GetSelection2()
 			self.editor.SetValue(text)
@@ -48,12 +53,14 @@ class TextDocument(Document):
 		if 'charset' in self.props: self.encoding = TextFormat.encodings.get(self.props['charset'], self.props['charset'])
 		if 'end_of_line' in self.props : self.lineEnding = TextFormat.lineEndings[self.props['end_of_line']]
 		text = self.editor.GetValue()
-		self.type = TextType.getTextType(self.file, text)
+		self.types = TextType.getTextTypes(self.file, text)
+		text = functools.reduce(lambda tx, tp: tp.onSave(tx, self), self.types, text)
 		if 'trim_trailing_whitespace' in self.props and self.props['trim_trailing_whitespace']=='true': text = re.compile(r'\s+$', re.M).sub('', text)
 		if 'insert_final_newline' in self.props and self.props['insert_final_newline']=='true' and not text.endswith('\n'): text+='\n'
 		if self.lineEnding!='\n': text = self.lineEnding.join(text.split('\n'))
 		data = bytes(text, encoding=self.encoding, errors='replace')
 		return data
+	
 	def save (self, file=None):
 		if not super().save(file): return False
 		data = self.getData()
@@ -109,16 +116,16 @@ class TextDocument(Document):
 		if not arg: return False
 		m = re.match(r'^([:+-]?)(\d+)$', arg)
 		if m:
-			if not m[1] or m[1]==':': return self.editor.SetInsertionPointXY(0, int(m[2]) -1)
-			elif m[1]=='+': return self.editor.SetInsertionPointXY(0, self.editor.GetLine()+int(m[2]))
-			elif m[1]=='-': return self.editor.SetInsertionPointXY(0, max(0, self.editor.GetLine() -int(m[2])))
+			if not m[1] or m[1]==':': self.editor.SetInsertionPointXY(0, int(m[2]) -1); return True
+			elif m[1]=='+': self.editor.SetInsertionPointXY(0, self.editor.GetLine()+int(m[2])); return True
+			elif m[1]=='-': self.editor.SetInsertionPointXY(0, max(0, self.editor.GetLine() -int(m[2]))); return True
 		m = re.match(r'^:?\[?(\d+)(\D)(\d+)\]?$', arg)
 		if m:
-			if m[2]=='-': return self.editor.SetSelectionXY(0, int(m[1]) -1, 4096, int(m[3]) -1)
-			else: return self.editor.SetInsertionPointXY(int(m[3]) -1, int(m[1]) -1)
+			if m[2]=='-': self.editor.SetSelectionXY(0, int(m[1]) -1, 4096, int(m[3]) -1); return True
+			else: self.editor.SetInsertionPointXY(int(m[3]) -1, int(m[1]) -1); return True
 		m = re.match(r'^:?\[?(\d+)\D(\d+)\D(\d+)\D(\d+)\]?$', arg)
-		if m: return self.editor.SetSelectionXY( int(m[2]) -1, int(m[1]) -1, int(m[4]) -1, int(m[3]) -1)
-		raise ValueError('Unknown jump to: ' +arg)
+		if m: self.editor.SetSelectionXY( int(m[2]) -1, int(m[1]) -1, int(m[4]) -1, int(m[3]) -1); return True
+		return False
 	
 	def mark(self):
 		self.editor.mark()
@@ -128,6 +135,10 @@ class TextDocument(Document):
 	
 	def selectToMark(self):
 		self.editor.selectToMark()
+	
+	def setReadOnly(self, ro):
+		self.readOnly=ro
+		if self.editor: self.editor.SetEditable(not ro)
 	
 	def setEncoding (self, enc):
 		self.encoding = enc if isinstance(enc,str) else TextFormat.encodings[enc]
@@ -156,6 +167,8 @@ class TextDocument(Document):
 		self.editor.SetValue(value)
 		self.editor.SetSelection(start, end)
 		self.editor.SetModified(mod)
+		self.editor.SetEditable(not self.readOnly)
+		self.editor.SetAcceleratorTable(wx.AcceleratorTable(ACCELERATOR_TABLE))
 		nbctl.InsertPage(i, self.editor, self.name, i==cur)
 	
 	def onFocus(self):
@@ -168,9 +181,12 @@ class TextDocument(Document):
 		if lei>=0: menubar.Check(ID_LE_FIRST+lei, True)
 		menubar.Check(ID_INDENT_TABS+self.indent, True)
 		menubar.Check(ID_AUTOWRAP, self.wrap)
+		menubar.Check(ID_READONLY, self.readOnly)
+		menubar.Enable(ID_AUTOFORMAT, any(hasattr(tt, 'autoformat') for tt in self.types))
 	
 	def getSpecificMenus(self):
 		return [(getFormatMenu(), translate('formatMenu'))]
+
 
 ID_ENC_DEFAULT = 6000
 ID_ENC_UTF8 = 6001
@@ -180,26 +196,29 @@ ID_ENC_UTF16BE = 6004
 ID_ENC_LEGACY_DEFAULT = 6007
 ID_ENC_OTHER=6256
 ID_INDENT_TABS = 6280
-ID_AUTOWRAP = 6289
 ID_LE_CRLF = 6290
 ID_LE_LF = 6291
 ID_LE_CR = 6292
+ID_AUTOWRAP = 6279
+ID_READONLY = 6278
+ID_AUTOFORMAT = 6277
 ID_ENC_FIRST = ID_ENC_DEFAULT
 ID_ENC_LAST = ID_ENC_OTHER -1
 ID_LE_FIRST = ID_LE_CRLF
 ID_LE_LAST = ID_LE_CR+1
 
 FORMAT_MENU = None
+ACCELERATOR_TABLE = []
 def getFormatMenu():
-	global FORMAT_MENU
+	global FORMAT_MENU, ACCELERATOR_TABLE
 	if FORMAT_MENU is None:
 		FORMAT_MENU, encodings, lineEndings, indent  = wx.Menu(), wx.Menu(), wx.Menu(), wx.Menu()
-		MenuManager.addItems(lineEndings, items=(
+		MenuManager.addItems(lineEndings, table=ACCELERATOR_TABLE, items=(
 			('LE_CRLF', ID_LE_CRLF, wx.ITEM_RADIO, True),
 			('LE_LF', ID_LE_LF, wx.ITEM_RADIO),
 			('LE_CR',  ID_LE_CR, wx.ITEM_RADIO)
 		))
-		MenuManager.addItems(encodings, items=(
+		MenuManager.addItems(encodings, table=ACCELERATOR_TABLE, items=(
 			('enc-'+TextFormat.defaultEncoding, ID_ENC_DEFAULT, wx.ITEM_RADIO, True),
 			('enc-utf-8', ID_ENC_UTF8 if TextFormat.defaultEncoding!='utf-8' else wx.ID_NONE, wx.ITEM_RADIO),
 			('enc-utf-8-sig', ID_ENC_UTF8_BOM, wx.ITEM_RADIO),
@@ -213,7 +232,11 @@ def getFormatMenu():
 		FORMAT_MENU.AppendSubMenu(encodings, translate('encoding'))
 		FORMAT_MENU.AppendSubMenu(lineEndings, translate('lineEnding'))
 		FORMAT_MENU.AppendSubMenu(indent, translate('indentation'))
-		MenuManager.addItem(FORMAT_MENU, changeAutoWrap, ID_AUTOWRAP, wx.ITEM_CHECK, False)
+		MenuManager.addItems(FORMAT_MENU, table=ACCELERATOR_TABLE, items=(
+			(autoformat, ID_AUTOFORMAT),
+			(toggleAutoWrap, ID_AUTOWRAP, wx.ITEM_CHECK, False),
+			(toggleReadOnly, ID_READONLY, wx.ITEM_CHECK, False)
+		))
 		win.Bind(wx.EVT_MENU_RANGE, changeEncoding, id=ID_ENC_FIRST, id2=ID_ENC_LAST)
 		win.Bind(wx.EVT_MENU_RANGE, changeLineEnding, id=ID_LE_FIRST, id2=ID_LE_LAST)
 		win.Bind(wx.EVT_MENU_RANGE, changeIndent, id=ID_INDENT_TABS, id2=ID_INDENT_TABS+8)
@@ -235,9 +258,18 @@ def changeLineEnding (e):
 def changeIndent (e):
 	win.document.setIndent(e.GetId() -ID_INDENT_TABS)
 
-def changeAutoWrap(e=None):
+def toggleAutoWrap(e=None):
 	win.ignorePageChanged = True
 	win.document.setWrap(not win.document.wrap, win.nbctl)
 	win.document.onFocus()
 	win.ignorePageChanged = False
 
+def toggleReadOnly(e=None):
+	win.document.setReadOnly(not win.document.readOnly)
+
+def autoformat(e=None):
+	self = win.document
+	text = self.editor.GetValue()
+	text = functools.reduce(lambda tx, tp: tp.autoformat(tx, self) if hasattr(tp, 'autoformat') else tx, self.types, text)
+	self.editor.SetValue(text)
+	

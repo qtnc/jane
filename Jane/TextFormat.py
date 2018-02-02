@@ -42,7 +42,7 @@ def rbol (s, r=re.compile(r'[^ \t]')): # real beginning of line
 
 def detectLineEnding (data, reg=re.compile(rb'\r\n|\n|\r')):
 	m = reg.search(data)
-	return str(m[0]) if m else os.linesep
+	return str(m[0], encoding='utf-8') if m else os.linesep
 
 def detectIndent (data, reg=re.compile(rb'^([\t ]+)', re.M)):
 	count=0

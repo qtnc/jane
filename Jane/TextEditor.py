@@ -1,8 +1,10 @@
 import re, wx
+import utils
 from TextFormat import rbol
 
 def bellFalsy (x):
 	if not x: wx.Bell()
+	return x
 
 def rsearch(reg, value, end, start=0, nth=-1):
 		matches = []
@@ -237,7 +239,7 @@ class TextEditor(wx.TextCtrl):
 		return True
 	
 	def goToInnerIndent(self, select=False):
-		getLevel = self.document.type.getLevelCalc(1)
+		getLevel = utils.first(t.getLevelCalc(1) for t in self.document.types)
 		anchor, pos = self.GetSelection2()
 		_, __, li = self.PositionToXY(pos)
 		_, __, nl = self.PositionToXY(self.GetLastPosition())
@@ -251,7 +253,7 @@ class TextEditor(wx.TextCtrl):
 		return True
 	
 	def goToOuterIndent (self, select=False):
-		getLevel, isBlankLine  = self.document.type.getLevelCalc(-1), self.document.type.isBlankLine
+		getLevel, isBlankLine  = utils.first((t.getLevelCalc(-1), t.isBlankLine) for t in self.document.types)
 		anchor, pos = self.GetSelection2()
 		_, __, li = self.PositionToXY(pos)
 		if li<=0: return False
@@ -268,7 +270,7 @@ class TextEditor(wx.TextCtrl):
 		return True
 
 	def goToSameIndent (self, direction=1, select=False):
-		getLevel, isBlankLine  = self.document.type.getLevelCalc(direction), self.document.type.isBlankLine
+		getLevel, isBlankLine  = utils.first((t.getLevelCalc(direction), t.isBlankLine) for t in self.document.types)
 		anchor, pos = self.GetSelection2()
 		_, __, li = self.PositionToXY(pos)
 		_, __, nl = self.PositionToXY(self.GetLastPosition())
@@ -359,10 +361,11 @@ class TextEditor(wx.TextCtrl):
 			if mod==wx.MOD_ALT: bellFalsy(self.goToOuterIndent())
 			elif mod==wx.MOD_ALT | wx.MOD_SHIFT: bellFalsy(self.goToOuterIndent(True))
 			else: e.Skip()
-		elif self.document.type.onCharHook(key, mod, self, self.document): e.Skip()
+		elif utils.firstTruthy(t.onCharHook(key, mod, self, self.document) for t in self.document.types): e.Skip()
 		else: e.Skip()
 	
 	def onChar(self, e):
+		if self.document.readOnly: return
 		ch = e.GetUnicodeKey()
 		if ch!=wx.WXK_NONE and ch!=8: self._textInserted(chr(ch))
 		e.Skip()
@@ -370,7 +373,7 @@ class TextEditor(wx.TextCtrl):
 	def onEnter(self, indent=None):
 		line = self.GetLineText(self.GetLine())
 		i = rbol(line)
-		if indent is None: indent = self.document.type.onEnter(line)
+		if indent is None: indent = utils.first((t.onEnter(line) for t in self.document.types), default=0)
 		if indent<0: i = max(0, i - abs(indent) * max(1, self.document.indent))
 		text = '\n' + line[:i]
 		if indent>0: text += indent * ('\t' if self.document.indent<=0 else self.document.indent * ' ')
@@ -400,8 +403,8 @@ class TextEditor(wx.TextCtrl):
 		line = self.GetLineText(li)
 		last = 0
 		for match in re.finditer(r'\b\S+\b', line):
-			if col in range(*match.span()): win.jumpTo(match[0]); return True
-		wx.Beep(); return False
+			if col in range(*match.span()): return bellFalsy(win.jumpTo(match[0]))
+		return bellFalsy(False)
 
 	
 	def onTab(self):

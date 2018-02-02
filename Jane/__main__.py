@@ -39,7 +39,7 @@ class Application(wx.App):
 		self.win = MainWindow(parent=None, title=appName)
 		__builtins__.__dict__['win'] = self.win
 		self.win.initUI()
-		self.loadExtensions()
+		self.loadPlugins()
 		self.openStdin()
 		#self.openStdout(sys.stdout, 'stdout')
 		#self.openStdout(sys.stderr, 'stderr')
@@ -49,12 +49,19 @@ class Application(wx.App):
 		self.SetTopWindow(win)
 		self.MainLoop()
 	
-	def loadExtensions(self):
-		extensions = ()
-		try: extensions = self.config.options('extensions')
+	def loadPlugins(self):
+		plugins = ()
+		try: plugins = self.config.options('plugins')
 		except NoSectionError: pass
-		for ext in extensions:
-			try: importlib.import_module(ext)
+		path = app.config.get('plugins', 'path', fallback='')
+		if path:
+			approot = os.path.dirname(sys.argv[0])
+			for p in path.split(os.path.pathsep):
+				if not p.startswith(os.path.sep) and p[1:3]!=':\\': p = Path(approot, p).resolve()
+				sys.path.append(str(p))
+		for plugin in plugins:
+			if plugin=='path': continue
+			try: importlib.import_module(plugin)
 			except Exception as e: print(e)
 	
 	def openStdin(self):

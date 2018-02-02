@@ -1,6 +1,6 @@
 import os, time
 import editorconfig
-import ProjectFactory
+import Project
 
 class Document:
 	def __init__(self, file=None, name=None, project=None, props=None, reloadable=False, savable=True):
@@ -16,7 +16,7 @@ class Document:
 		if reloading and not self.reloadable and not file: return False
 		if file: self.file=file
 		if not self.file: return False
-		self.project = ProjectFactory.getProjectOf(self.file)
+		self.project = Project.getProjectOf(self.file)
 		self.reloadable = True
 		try: self.props = editorconfig.get_properties(self.file)
 		except editorconfig.EditorConfigError: self.props = {}
@@ -43,7 +43,7 @@ class Document:
 		try: return self.modificationTime>0 and os.stat(self.file).st_mtime > self.modificationTime
 		except (FileNotFoundError, OSError): return False
 	
-	def jumpToDialog(self): pass
+	def jumpToDialog(self): return False
 	
 	def getSpecificMenus(self):
 		return ()

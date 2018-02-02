@@ -8,4 +8,4 @@ Jane/build/
 *.log
 out*.txt
 test*.*
-*_.*
+*_.txt

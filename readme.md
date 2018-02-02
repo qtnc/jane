@@ -45,8 +45,30 @@ You can find documentation in the docs directory. Currently these documents are 
 - [The jump to feature](docs/jump-to-feature.md)
 - [The smart paste feature](docs/smart-paste-feature.md)
 - [Writing document plugin](docs/writing-document-plugin.md)
-- [Writing project plugin](docs/writing-project-plugin.md)
+- [Writing facet plugin](docs/writing-facet-plugin.md)
 - [Writing text type plugin](docs/writing-text-type-plugin.md)
+
+# Extension plugins
+Three kinds of plugins can be written. They allow to handle more types of documents, and more kinds of project facets.
+Plugins are just python modules that are imported when Jane starts. IN order to work, they must be placed in a directory from where they can be imported.
+
+## Available plugins
+Plugin name | Type | Description
+------------|-----|-----------------------------
+[Astyle](docs/plugin-astyle.md)  | Text type | Format Java, C/C++ and C# source code using [Artistic style](http://astyle.sourceforge.net/)
+CLikeType | Text type | Provite Alt+Arrow keys navigation in bracket-based languages such as C, C++, Java, C#, PHP, CSS/less/sass/scss
+MarkdownType | Text type | activate read-only mode  and use familiar quick key navigation to navigate in markdown documents, such as H to go to next heading. H, Q, L, T, 1, 2, 3, 4, 5 are supported.
+PythonType | Text type | Provide Alt+Arrow keys navigation for languages based on indentation such as python
+XMLType | Text type | Provide Alt+Arrow keys navigation for XML-based languages. Requires CLikeType
+
+
+## Third-partie plugins
+The following plugins are third-partie plugins that the developers of Jane find worth it.
+In case of problems, please file an issue to their authors rather then here.
+
+Currently none
+
+
 
 # Story
 Since a long time, I have been frustrated by default windows' notepad because of its lack of functionalities for developers.

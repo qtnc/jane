@@ -12,14 +12,14 @@ class TextDocument(Document):
 		self.types = [TextType.DefaultType()]
 		self.indent = app.config.getint('text', 'indentation', fallback=0)
 		self.wrap = app.config.getboolean('text', 'autowrap', fallback=False)
-		self.readOnly = False
+		self.editor = None
 	
-	def initUI(self, parent, select=True):
+	def createUI(self, parent):
 		getFormatMenu()
-		self.editor = TextEditor(parent, self, self.wrap)
+		self.component = self.editor = TextEditor(parent, self, self.wrap)
 		self.editor.SetEditable(not self.readOnly)
 		self.editor.SetAcceleratorTable(wx.AcceleratorTable(ACCELERATOR_TABLE))
-		parent.AddPage(self.editor, text=self.name, select=select)
+		return self.component
 	
 	def open (self, file=None, reloading=False):
 		if not super().open(file, reloading): return False
@@ -70,22 +70,22 @@ class TextDocument(Document):
 		return True
 	
 	def paste (self):
-		self.editor.Paste()
+		if not self.readOnly: self.editor.Paste()
 	
 	def copy(self):
 		self.editor.Copy()
 	
 	def cut(self):
-		self.editor.Cut()
+		if not self.readOnly: self.editor.Cut()
 	
 	def selectAll (self):
 		self.editor.SelectAll()
 	
 	def undo(self):
-		self.editor.Undo()
+		if not self.readOnly: self.editor.Undo()
 	
 	def redo(self):
-		self.editor.Redo()
+		if not self.readOnly: self.editor.Redo()
 	
 	def isModified(self):
 		return self.editor.IsModified()
@@ -98,6 +98,7 @@ class TextDocument(Document):
 			else: return self.editor.findNext(reg)
 	
 	def findReplaceDialog(self, parent):
+		if self.readOnly: return -2
 		with TextFindDialog(parent, True) as tfd:
 			if tfd.ShowModal() != wx.ID_OK: return -1
 			count = self.editor.findReplace(tfd.getFindRegex(), tfd.getReplacement())
@@ -154,22 +155,24 @@ class TextDocument(Document):
 			newIndent = '\t' if self.indent==0 else self.indent * ' '
 			self.editor.findReplace(indreg, newIndent)
 	
-	def setWrap (self, wrap, nbctl):
+	def setWrap (self, wrap, parent):
 		if self.wrap==wrap: return
 		self.wrap=wrap
 		value = self.editor.GetValue()
 		start, end = self.editor.GetSelection()
 		mod = self.editor.IsModified()
-		cur = nbctl.GetSelection()
-		i = nbctl.FindPage(self.editor)
-		nbctl.DeletePage(i)
-		self.editor = TextEditor(nbctl, self, self.wrap)
+		cur = parent.GetSelection()
+		i = parent.FindPage(self.component)
+		parent.DeletePage(i)
+		self.component = self.createUI(parent)
 		self.editor.SetValue(value)
 		self.editor.SetSelection(start, end)
 		self.editor.SetModified(mod)
-		self.editor.SetEditable(not self.readOnly)
-		self.editor.SetAcceleratorTable(wx.AcceleratorTable(ACCELERATOR_TABLE))
-		nbctl.InsertPage(i, self.editor, self.name, i==cur)
+		parent.InsertPage(i, self.component, self.name, i==cur)
+	
+	def canDo(self, id):
+		if self.readOnly and id in (wx.ID_SAVE, wx.ID_SAVEAS, wx.ID_REVERT, wx.ID_CUT, wx.ID_PASTE, wx.ID_UNDO, wx.ID_REDO, wx.ID_REPLACE): return False
+		else: return True
 	
 	def onFocus(self):
 		self.editor.SetFocus()
@@ -266,9 +269,12 @@ def toggleAutoWrap(e=None):
 
 def toggleReadOnly(e=None):
 	win.document.setReadOnly(not win.document.readOnly)
+	win.onPageChanged(win.nbctl)
+	win.document.onFocus()
 
 def autoformat(e=None):
 	self = win.document
+	if self.readOnly: return
 	text = self.editor.GetValue()
 	text = functools.reduce(lambda tx, tp: tp.autoformat(tx, self) if hasattr(tp, 'autoformat') else tx, self.types, text)
 	self.editor.SetValue(text)

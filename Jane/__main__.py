@@ -73,7 +73,6 @@ class Application(wx.App):
 		except OSError: raise #pass
 		if data:
 			win.newDocument(name=translate('stdin'), file=None, data=data, savable=False, reloadable=False) .setData(data)
-
 	
 	def openStdout (self, stdout, name):
 		if not stdout or sys.stdout.isatty(): return

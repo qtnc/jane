@@ -1,9 +1,11 @@
 from TextDocument import TextDocument
+from SubprocessTextDocument import SubprocessTextDocument
 from collections import OrderedDict
 import utils
 
 types = OrderedDict(
-	text = TextDocument
+	text = TextDocument,
+	_subprocess = SubprocessTextDocument
 )
 
 factories = []
@@ -13,7 +15,7 @@ default = 'text'
 def setDefault (t):
 	if t in types: default=t
 
-def newDocument (type, name, *args, **kwargs):
+def newDocument (type, name=None, *args, **kwargs):
 	return types[type or default](file=None, name=name, *args, **kwargs)
 
 def openDocument (file=None, name=None, data=None, *args, **kwargs):

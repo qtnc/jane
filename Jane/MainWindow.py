@@ -10,6 +10,17 @@ ID_SELECT_TO_MARK = 4997
 ID_FIND_NEXT = 4998
 ID_FIND_PREV = 4999
 
+FILE_MENU = (
+	('newDocument', wx.ID_NEW),
+	('openDialog', wx.ID_OPEN),
+	('runCommandDialog', wx.ID_EXECUTE),
+	('reloadDocument', wx.ID_REVERT),
+	('saveDocument', wx.ID_SAVE),
+	('saveDocumentAs', wx.ID_SAVEAS),
+	('closeDocument', wx.ID_CLOSE),
+	('exit', wx.ID_EXIT)
+)
+
 EDIT_MENU = (
 	('undo', wx.ID_UNDO),
 	('redo', wx.ID_REDO),
@@ -45,15 +56,7 @@ class MainWindow(wx.Frame):
 		table = []
 		menubar = wx.MenuBar()
 		file, edit, fmt, help = wx.Menu(), wx.Menu(), wx.Menu(), wx.Menu()
-		MenuManager.addItems(file, table=table, items=OrderedDict(
-			newDocument = wx.ID_NEW,
-			openDialog = wx.ID_OPEN,
-			reloadDocument=wx.ID_REVERT,
-			saveDocument = wx.ID_SAVE,
-			saveDocumentAs = wx.ID_SAVEAS,
-			closeDocument = wx.ID_CLOSE,
-			exit=wx.ID_EXIT
-		))
+		MenuManager.addItems(file, table=table, items=FILE_MENU)
 		MenuManager.addItems(edit, table=table, items=EDIT_MENU)
 		MenuManager.addItem(help, 'about', wx.ID_ABOUT)
 		menubar.Append(file, translate('fileMenu'))
@@ -72,7 +75,8 @@ class MainWindow(wx.Frame):
 	def addDocument (self, doc):
 		self.documents.append(doc)
 		if doc.file: self.documentsByPath[doc.file]=doc
-		doc.initUI(parent=self.nbctl, select=True)
+		doc.component = doc.createUI(self.nbctl)
+		self.nbctl.AddPage(doc.component, text=doc.name, select=True)
 		doc.open()
 		self.onPageChanged(self.nbctl)
 	
@@ -102,6 +106,16 @@ class MainWindow(wx.Frame):
 	
 	def closeAllDocuments (self, e=None):
 		return all(self.closeDocument(i) for i in range(len(self.documents) -1, -1, -1))
+	
+	def runCommand (self, cmd, name=None):
+		curdoc = self.document
+		if curdoc: project=curdoc.project; cwd=curdoc.file.parent if curdoc.file else None
+		else: cwd = project = None
+		self.addDocument(DocumentFactory.newDocument(type='_subprocess', cmd=cmd, name=name, project=project, cwd=cwd))
+	
+	def runCommandDialog(self, e=None):
+		cmd = wx.GetTextFromUser(translate('runcmddlgm'), translate('runcmddlgc'))
+		if cmd: self.runCommand(cmd)
 	
 	def checkConcurrentModifications(self):
 		self.closing=True
@@ -264,9 +278,8 @@ class MainWindow(wx.Frame):
 				pmIndex = 2 + len(docMenus)
 				for i in range(pmIndex+len(oldProjMenus), pmIndex, -1): menubar.Remove(i)
 				for i, it in enumerate(projMenus, pmIndex): menubar.Insert(i, it[0], it[1])
-		for name, id in EDIT_MENU: menubar.Enable(id, hasattr(doc, name) and callable(getattr(doc, name)))
-		menubar.Enable(wx.ID_SAVE, doc.savable)
-		menubar.Enable(wx.ID_REVERT, doc.reloadable)
+		for name, id in EDIT_MENU: menubar.Enable(id, hasattr(doc, name) and callable(getattr(doc, name)) and doc.canDo(id))
+		for name, id in FILE_MENU: menubar.Enable(id, doc.canDo(id))
 		menubar.Refresh()
 		doc.onFocus()
 	

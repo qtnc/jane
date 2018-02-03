@@ -1,10 +1,10 @@
 import os, re, ctypes
 
-defaultEncoding = 'cp1252'
+defaultEncoding = 'utf-8'
 legacyEncoding = 'iso-8859-1'
 if os.name=='nt':
-		defaultEncoding = 'cp' + str(ctypes.windll.kernel32.GetACP())
-		legacyEncoding = 'cp' + str(ctypes.windll.kernel32.GetOEMCP())
+	defaultEncoding = 'cp' + str(ctypes.windll.kernel32.GetACP())
+	legacyEncoding = 'cp' + str(ctypes.windll.kernel32.GetOEMCP())
 
 lineEndings = {
 	0:'\r\n', '\r\n':0, 'crlf':'\r\n', 'dos':'\r\n',

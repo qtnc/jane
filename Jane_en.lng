@@ -60,6 +60,10 @@ txtStatus2=Li {0}, col {1}; to li {2}, col {3}
 about=About...
 about1=About {0}
 aboutText={0} {1}\n{2}\n\nThis program is a free software; you can distribute and/or modify it under the GPL license version 3.
+runCommandDialog=Run...
+runcmddlgm=Type the command to run
+runcmddlgc=Run
+subprocessExit=Execution returned {0}
 
 LE_CRLF=DOS/Windows (CRLF)
 LE_LF=UNIX/Linux (LF)

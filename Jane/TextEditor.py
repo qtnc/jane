@@ -314,21 +314,21 @@ class TextEditor(wx.TextCtrl):
 	
 	def onCharHook (self, e):
 		key, mod = e.GetKeyCode(), e.GetModifiers()
-		if key==wx.WXK_RETURN and mod==wx.MOD_NONE:
+		if key==wx.WXK_RETURN and mod==wx.MOD_NONE and not self.document.readOnly:
 			self.onEnter()
-		elif key==wx.WXK_RETURN and mod==wx.MOD_SHIFT:
+		elif key==wx.WXK_RETURN and mod==wx.MOD_SHIFT and not self.document.readOnly:
 			self.onEnter(1)
-		elif key==wx.WXK_RETURN and mod==wx.MOD_CONTROL|wx.MOD_SHIFT:
+		elif key==wx.WXK_RETURN and mod==wx.MOD_CONTROL|wx.MOD_SHIFT and not self.document.readOnly:
 			self.onEnter(-1)
 		elif key==wx.WXK_RETURN and mod==wx.MOD_CONTROL:
 			self.onCtrlEnter()
-		elif key==wx.WXK_TAB and mod==wx.MOD_NONE:
+		elif key==wx.WXK_TAB and mod==wx.MOD_NONE and not self.document.readOnly:
 			self.onTab()
-		elif key==wx.WXK_TAB and mod==wx.MOD_SHIFT:
+		elif key==wx.WXK_TAB and mod==wx.MOD_SHIFT and not self.document.readOnly:
 			self.onShiftTab()
-		elif key==wx.WXK_BACK and mod==wx.MOD_NONE:
+		elif key==wx.WXK_BACK and mod==wx.MOD_NONE and not self.document.readOnly:
 			if not self.onBackspace(): e.Skip()
-		elif key==wx.WXK_DELETE and mod==wx.MOD_NONE:
+		elif key==wx.WXK_DELETE and mod==wx.MOD_NONE and not self.document.readOnly:
 			if not self.onDelete(): e.Skip()
 		elif key==wx.WXK_HOME:
 			if mod==wx.MOD_NONE: self.onHome()
@@ -365,10 +365,9 @@ class TextEditor(wx.TextCtrl):
 		else: e.Skip()
 	
 	def onChar(self, e):
-		if self.document.readOnly: return
 		ch = e.GetUnicodeKey()
-		if ch!=wx.WXK_NONE and ch!=8: self._textInserted(chr(ch))
-		e.Skip()
+		if ch!=wx.WXK_NONE and ch!=8 and not self.document.readOnly: self._textInserted(chr(ch))
+		if ch==wx.WXK_NONE or not self.document.readOnly: e.Skip()
 	
 	def onEnter(self, indent=None):
 		line = self.GetLineText(self.GetLine())

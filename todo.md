@@ -7,6 +7,7 @@
 - Add support to open file / paste file paths / insert file contents for fiels copied or drag-dropped from explorer
 - Add single instance option using IPC
 - Use gettext for translations
+- Do consist error handling
 - Add support for projects
 - Add more possibilities for jump to
 - Implement scripting API

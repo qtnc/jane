@@ -3,7 +3,7 @@ import editorconfig
 import Project
 
 class Document:
-	def __init__(self, file=None, name=None, project=None, props=None, reloadable=False, savable=True):
+	def __init__(self, file=None, name=None, project=None, props=None, reloadable=False, savable=True, readOnly=False):
 		self.name=name
 		self.file=file
 		self.project = project
@@ -11,6 +11,7 @@ class Document:
 		self.modificationTime = -1
 		self.reloadable = reloadable
 		self.savable = savable
+		self.readOnly=readOnly
 	
 	def open(self, file=None, reloading=False):
 		if reloading and not self.reloadable and not file: return False
@@ -44,9 +45,8 @@ class Document:
 		except (FileNotFoundError, OSError): return False
 	
 	def jumpToDialog(self): return False
+	def canDo (self, id): return True
+	def getSpecificMenus(self): return ()
 	
-	def getSpecificMenus(self):
-		return ()
-	
-	#def getData(self):
-		raise ValueError('Unsupported operation')
+#	def getData(self):
+#		raise ValueError('Unsupported operation')

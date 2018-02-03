@@ -1,3 +1,7 @@
+class Object:
+	def __init__(self, **kwargs):
+		for k, v in kwargs.items(): setattr(self,k,v)
+
 def identity(x): x
 
 def first (iterable, pred = lambda x: x is not None, default=None):

@@ -3,6 +3,7 @@ import utils, TextFormat, TextType, MenuManager
 from Document import Document
 from TextEditor import TextEditor
 from TextFindDialog import TextFindDialog
+from SingleChoiceDialog import SingleChoiceDialog
 
 class TextDocument(Document):
 	def __init__(self, *args, **kwargs):
@@ -171,7 +172,8 @@ class TextDocument(Document):
 		parent.InsertPage(i, self.component, self.name, i==cur)
 	
 	def canDo(self, id):
-		if self.readOnly and id in (wx.ID_SAVE, wx.ID_SAVEAS, wx.ID_REVERT, wx.ID_CUT, wx.ID_PASTE, wx.ID_UNDO, wx.ID_REDO, wx.ID_REPLACE): return False
+		if self.readOnly and id in (wx.ID_SAVE, wx.ID_SAVEAS, wx.ID_REVERT, wx.ID_CUT, wx.ID_PASTE, wx.ID_UNDO, wx.ID_REDO, wx.ID_REPLACE, ID_AUTOFORMAT): return False
+		elif id==ID_AUTOFORMAT: return any(hasattr(tt, 'autoformat') for tt in self.types)
 		else: return True
 	
 	def onFocus(self):
@@ -185,7 +187,7 @@ class TextDocument(Document):
 		menubar.Check(ID_INDENT_TABS+self.indent, True)
 		menubar.Check(ID_AUTOWRAP, self.wrap)
 		menubar.Check(ID_READONLY, self.readOnly)
-		menubar.Enable(ID_AUTOFORMAT, any(hasattr(tt, 'autoformat') for tt in self.types))
+		for id in (ID_AUTOFORMAT, ID_READONLY, ID_AUTOWRAP): menubar.Enable(id, self.canDo(id))
 	
 	def getSpecificMenus(self):
 		return [(getFormatMenu(), translate('formatMenu'))]
@@ -246,10 +248,10 @@ def getFormatMenu():
 	return FORMAT_MENU
 
 def encodingDialog(e=None):
-	lst = [translate('enc-'+x.replace('_', '-').lower()) for x in TextFormat.allEncodings]
-	with wx.SingleChoiceDialog(win, translate('encodingDialogM'), translate('encodingDialogT'), lst) as sd:
+	lst = [(x, translate('enc-'+x.replace('_', '-').lower())) for x in TextFormat.allEncodings]
+	with SingleChoiceDialog(win, translate('encodingDialogM'), translate('encodingDialogT'), lst) as sd:
 		if sd.ShowModal() != wx.ID_OK: return
-		enc = TextFormat.allEncodings[sd.GetSelection()]
+		enc = sd.GetSelectionValue()
 		win.document.setEncoding(enc)
 
 def changeEncoding (e):

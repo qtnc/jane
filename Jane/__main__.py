@@ -72,11 +72,11 @@ class Application(wx.App):
 				data = stdin.read()
 		except OSError: raise #pass
 		if data:
-			win.newDocument(name=translate('stdin'), file=None, data=data, savable=False, reloadable=False) .setData(data)
+			win.newDocument(name=translate('stdin'), file=None, data=data) .setData(data)
 	
 	def openStdout (self, stdout, name):
 		if not stdout or sys.stdout.isatty(): return
-		doc = win.newDocument(name=translate(name), savable=False, reloadable=False) 
+		doc = win.newDocument(name=translate(name)) 
 		doc.close = writeOnClose(doc, stdout.fileno())
 	
 	def translate (self, key, defaultValue=None):

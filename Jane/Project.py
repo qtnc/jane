@@ -38,7 +38,7 @@ def getProjectOf (file):
 	for path, project  in projects.items():
 		if path in file.parents: return project
 	for path in file.parents:
-		facets = list(filter(lambda f: f(path), FacetFactory.factories)) 
+		facets = [x for x in (f(path) for f in FacetFactory.factories) if x]
 		if facets: p=Project(path, facets)
 		else: p = Project(path) if isUntypedProject(path) else None
 		if p: project=p

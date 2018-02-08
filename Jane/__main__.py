@@ -9,45 +9,54 @@ class Application(wx.App):
 		super().__init__(*args, **kwargs)
 		__builtins__.__dict__['app'] = self
 		executablePath = Path(sys.argv[0])
-		self.lang = lang = wx.Locale.GetLanguageCanonicalName(wx.Locale.GetSystemLanguage())
-		locale = wx.Locale(language=wx.Locale.GetSystemLanguage())
-		self.name = appName = executablePath.stem
+		self.name = app.name = executablePath.stem
 		self.version = '0.0'
-		self.dir = appDir = executablePath.parent.resolve()
+		self.dir = executablePath.parent.resolve()
 		sys.path.append(os.path.dirname(sys.argv[0]))
-		self.configDir = configDir = Path(wx.StandardPaths.Get().GetUserConfigDir(), appName)
-		self.config = ConfigParser(default_section='global', allow_no_value=True, empty_lines_in_values=False, strict=True, interpolation=ExtendedInterpolation())
-		self.config.optionxform = str
-		translations = ConfigParser(default_section='default', empty_lines_in_values=False, strict=True, interpolation=ExtendedInterpolation())
-		translations.optionxform = str
-		self.config.read((
-		str(Path(configDir, appName+'.ini')),
-			str(Path(appDir, appName+'.ini'))
-		))
-		parser = ArgumentParser()
-		parser.add_argument('files', nargs='*')
-		argv = parser.parse_args()
-		translations.read((
-			str(Path(appDir, appName+'.lng')),
-			str(Path(appDir, appName +'_' + lang[0:2] + '.lng')),
-			str(Path(appDir, appName +'_' + lang + '.lng'))
-		))
-		if translations.has_section(lang): self.translations = translations[lang]
-		elif translations.has_section(lang[0:2]): self.translations = translations[lang[0:2]]
-		else: self.translations = translations.defaults()
-		__builtins__.__dict__['translate'] = self.translate #wx.GetTranslation 
-		self.win = MainWindow(parent=None, title=appName)
+		self.loadCmdlineArgs()
+		self.loadConfig()
+		self.loadTranslations()
+		self.win = MainWindow(parent=None, title=app.name)
 		__builtins__.__dict__['win'] = self.win
 		self.win.initUI()
 		self.loadPlugins()
 		self.openStdin()
 		#self.openStdout(sys.stdout, 'stdout')
 		#self.openStdout(sys.stderr, 'stderr')
-		win.openDocuments(argv.files)
+		win.openDocuments(self.cmdargs.files)
 		if not win.documents: win.newDocument()
 		win.Show(True)
 		self.SetTopWindow(win)
 		self.MainLoop()
+	
+	def loadCmdlineArgs(self):
+		parser = ArgumentParser()
+		parser.add_argument('files', nargs='*')
+		self.cmdargs = parser.parse_args()
+
+	def loadConfig(self):
+		self.configDir = configDir = Path(wx.StandardPaths.Get().GetUserConfigDir(), app.name)
+		self.config = ConfigParser(default_section='global', allow_no_value=True, empty_lines_in_values=False, strict=True, interpolation=ExtendedInterpolation())
+		self.config.optionxform = str
+		self.config.read((
+		str(Path(configDir, app.name+'.ini')),
+			str(Path(app.dir, app.name+'.ini'))
+		))
+	
+	def loadTranslations(self):
+		self.lang = lang = wx.Locale.GetLanguageCanonicalName(wx.Locale.GetSystemLanguage())
+		locale = wx.Locale(language=wx.Locale.GetSystemLanguage())
+		translations = ConfigParser(default_section='default', empty_lines_in_values=False, strict=True, interpolation=ExtendedInterpolation())
+		translations.optionxform = str
+		translations.read((
+			str(Path(app.dir, app.name+'.lng')),
+			str(Path(app.dir, app.name +'_' + lang[0:2] + '.lng')),
+			str(Path(app.dir, app.name +'_' + lang + '.lng'))
+		))
+		if translations.has_section(lang): self.translations = translations[lang]
+		elif translations.has_section(lang[0:2]): self.translations = translations[lang[0:2]]
+		else: self.translations = translations.defaults()
+		__builtins__.__dict__['translate'] = self.translate #wx.GetTranslation 
 	
 	def loadPlugins(self):
 		plugins = ()

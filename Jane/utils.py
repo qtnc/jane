@@ -13,6 +13,7 @@ def firstTruthy (iterable, default=None):
 	return first(iterable, identity, default)
 
 def iterable(o):
+	if isinstance(o,str): return False
 	try: iter(o)
 	except TypeError: return False
 	return True
@@ -22,6 +23,7 @@ def flattened(arg):
 		if iterable(i): yield from flattened(i)
 		else: yield i
 
-def flatten (seq):
-	return type(seq)(flattened(seq))
+def flatten (seq, factory=None):
+	if factory is None: factory=type(seq)
+	return factory(flattened(seq))
 

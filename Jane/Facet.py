@@ -1,2 +1,3 @@
 class Facet:
-	def open (project): pass
+	def open (self, project): pass
+	def getSpecificMenus(self): return ()

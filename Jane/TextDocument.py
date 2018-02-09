@@ -20,6 +20,7 @@ class TextDocument(Document):
 		self.component = self.editor = TextEditor(parent, self, self.wrap)
 		self.editor.SetEditable(not self.readOnly)
 		self.editor.SetAcceleratorTable(wx.AcceleratorTable(ACCELERATOR_TABLE))
+		if hasattr(self, '_text') and self._text: self.editor.SetValue(self._text); del self._text
 		return self.component
 	
 	def open (self, file=None, reloading=False):
@@ -48,6 +49,7 @@ class TextDocument(Document):
 			self.editor.SetValue(text)
 			self.editor.SetSelection(start, end)
 			self.editor.SetModified(False)
+		else: self._text = text
 		return True
 	
 	def getData(self):

@@ -1,22 +1,31 @@
-import os, re, zipfile, subprocess, threading
-import utils
+import wx, os, re, functools, zipfile, subprocess, threading
+import utils, MenuManager
 from pathlib import Path
 from Facet import Facet
 from FacetFactory import FacetFactory
+from TextType import TextType
 
-MVN_PATH = r"C:\Java\apache-maven-3.5.0\bin\mvn.cmd"
-MVN_REPO_PATH = r"C:\Users\Quentin\.m2\repository"
-RT_JARS = [r"C:\Java\JDK8\jre\lib\rt.jar"]
+MVN_PATH = Path(app.config.get('maven', 'mavenPath'), 'bin', 'mvn.cmd')
+MVN_REPO_PATH = Path(app.config.get('maven', 'repositoryPath'))
+JAVA_PATH = Path(app.config.get('maven', 'javaPath'))
+ONSAVE = app.config.getboolean('maven', 'autoImportOnSave', fallback=False)
+MVN_GOAL_ACTIONS = ('clean', 'compile', 'test', 'package', 'install', 'clean package', 'clean install')
+MVN_MENU = None
+MVN_ACCELERATOR_TABLE = []
+
 
 @FacetFactory
 def mavenFacetFactory(path):
 	return MavenFacet() if Path(path, 'pom.xml').exists() else None
 
 class MavenFacet(Facet):
+	def getSpecificMenus(self):
+		return [(getMvnMenu(), translate('Maven'))]
+	
 	def open(self, project):
 		self.root = project.root
 		self.classes = {}
-		threading.Thread(target=self.updateClasses).start()
+		#threading.Thread(target=self.updateClasses).start()
 	
 	def updateClasses(self):
 		for p in self.root.glob('**/src/main/java/**/*.java'):
@@ -30,7 +39,7 @@ class MavenFacet(Facet):
 		self.classes = {}
 		self.testClasses = {}
 		reg = re.compile(r'^\[INFO\]\s*(?P<groupId>\S+):(?P<artifactId>\S+):(?P<packaging>\S+):(?P<version>\S+):(?P<scope>\S+)')
-		for jar in RT_JARS: self.referenceJar(jar)
+		self.referenceJar(Path(JAVA_PATH, 'jre', 'lib', 'rt.jar'))
 		for line in subprocess.run('{0} {1}' .format(MVN_PATH, 'dependency:list'), encoding='utf-8', errors='replace', cwd=self.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True) .stdout .splitlines():
 			m = reg.match(line)
 			if not m: continue
@@ -54,3 +63,22 @@ class MavenFacet(Facet):
 		cls = self.testClasses if scope=='test' else self.classes
 		if name in cls: cls[name].add(fullname)
 		else: cls[name] = {fullname}
+
+
+def mvnGoalAction(goal, e=None):
+	cmd = '"' + str(MVN_PATH) + '" ' + goal
+	proj = win.document.project
+	print('Running: ', cmd)
+	win.newDocument(type='_subprocess', name='mvn '+goal, cmd=cmd, cwd=proj.root, project=proj)
+
+def mvnGoalActionFunc(goal):
+	f = functools.partial(mvnGoalAction, goal)
+	f.__name__ = 'mvn '+goal
+	return f
+
+def getMvnMenu():
+	global MVN_MENU
+	if MVN_MENU is not None: return MVN_MENU
+	MVN_MENU = wx.Menu()
+	MenuManager.addItems(MVN_MENU, table=MVN_ACCELERATOR_TABLE, items=((mvnGoalActionFunc(goal), wx.ID_ANY) for goal in MVN_GOAL_ACTIONS))
+	return MVN_MENU

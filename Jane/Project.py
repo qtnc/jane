@@ -14,7 +14,7 @@ class Project:
 		for facet in self.facets: facet.open(self)
 	
 	def getSpecificMenus(self):
-		return utils.flatten(tuple(x.getSpecificMenus() for x in self.facets))
+		return utils.flatten(tuple(x.getSpecificMenus() for x in self.facets), maxDepth=1)
 	
 	def findFiles (self, fn, base=None):
 		name, ext = path.splitext(fn)

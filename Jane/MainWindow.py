@@ -75,9 +75,9 @@ class MainWindow(wx.Frame):
 	def addDocument (self, doc):
 		self.documents.append(doc)
 		if doc.file: self.documentsByPath[doc.file]=doc
+		doc.open()
 		doc.component = doc.createUI(self.nbctl)
 		self.nbctl.AddPage(doc.component, text=doc.name, select=True)
-		doc.open()
 		self.onPageChanged(self.nbctl)
 	
 	def getDocument (self, e=None):
@@ -276,7 +276,7 @@ class MainWindow(wx.Frame):
 			oldProjMenus = oldProject.getSpecificMenus() if oldProject else ()
 			if oldProjMenus!=projMenus:
 				pmIndex = 2 + len(docMenus)
-				for i in range(pmIndex+len(oldProjMenus), pmIndex, -1): menubar.Remove(i)
+				for i in range(pmIndex+len(oldProjMenus) -1, pmIndex -1, -1): menubar.Remove(i)
 				for i, it in enumerate(projMenus, pmIndex): menubar.Insert(i, it[0], it[1])
 		for name, id in EDIT_MENU: menubar.Enable(id, hasattr(doc, name) and callable(getattr(doc, name)) and doc.canDo(id))
 		for name, id in FILE_MENU: menubar.Enable(id, doc.canDo(id))

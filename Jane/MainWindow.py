@@ -2,6 +2,7 @@ import wx, re
 from pathlib import Path
 from collections import OrderedDict
 from Document import Document
+from SingleChoiceDialog import SingleChoiceDialog
 import MenuManager, DocumentFactory
 
 ID_MARK = 4995
@@ -9,6 +10,8 @@ ID_GO_TO_MARK = 4996
 ID_SELECT_TO_MARK = 4997
 ID_FIND_NEXT = 4998
 ID_FIND_PREV = 4999
+ID_TEST = 9999
+
 
 FILE_MENU = (
 	('newDocument', wx.ID_NEW),
@@ -18,6 +21,7 @@ FILE_MENU = (
 	('saveDocument', wx.ID_SAVE),
 	('saveDocumentAs', wx.ID_SAVEAS),
 	('closeDocument', wx.ID_CLOSE),
+	('test', ID_TEST),
 	('exit', wx.ID_EXIT)
 )
 
@@ -240,6 +244,10 @@ class MainWindow(wx.Frame):
 	
 	def exit (self, e=None):
 		self.Close()
+	
+	def test(self, e=None):
+		scd = SingleChoiceDialog(win, 'Test message', 'Test title', ('One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'))
+		scd.Show()
 	
 	def updateWindowTitle (self, doc=None, modified=None):
 		if not doc: doc = self.document

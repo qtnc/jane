@@ -13,6 +13,9 @@ class Project:
 	def open(self):
 		for facet in self.facets: facet.open(self)
 	
+	def getFacet(self, cls):
+		return utils.first(f for f in self.facets if type(f)==cls)
+	
 	def getSpecificMenus(self):
 		return utils.flatten(tuple(x.getSpecificMenus() for x in self.facets), maxDepth=1)
 	

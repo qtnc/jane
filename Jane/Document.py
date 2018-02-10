@@ -12,6 +12,7 @@ class Document:
 		self.reloadable = reloadable
 		self.savable = savable
 		self.readOnly=readOnly
+		self.acceleratorTable = []
 	
 	def open(self, file=None, reloading=False):
 		if reloading and not self.reloadable and not file: return False
@@ -47,6 +48,8 @@ class Document:
 	def jumpToDialog(self): return False
 	def canDo (self, id): return True
 	def getSpecificMenus(self): return ()
+	def getEditMenuSpecificItems(self): return ()
+	def getFileMenuSpecificItems(self): return ()
 	
 #	def getData(self):
 #		raise ValueError('Unsupported operation')

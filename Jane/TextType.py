@@ -3,6 +3,10 @@ import re
 import utils
 
 class DefaultType:
+	def getSpecificMenus(self): return ()
+	def getFormatMenuSpecificItems(self): return ()
+	def getEditMenuSpecificItems(self): return ()
+	def getFileMenuSpecificItems(self): return ()
 	def getLevel(self, line): return rbol(line)
 	def getLevelCalc(self, direction): return self.getLevel
 	def isBlankLine(self, line): return line.isspace() or not line

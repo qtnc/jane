@@ -15,11 +15,15 @@ class TextDocument(Document):
 		self.wrap = app.config.getboolean('text', 'autowrap', fallback=False)
 		self.editor = None
 	
+	def getTextType(self, ttp):
+		return utils.first(tt for tt in self.types if type(tt)==ttp)
+	
 	def createUI(self, parent):
-		getFormatMenu()
+		win.Bind(wx.EVT_MENU_RANGE, changeEncoding, id=ID_ENC_FIRST, id2=ID_ENC_LAST)
+		win.Bind(wx.EVT_MENU_RANGE, changeLineEnding, id=ID_LE_FIRST, id2=ID_LE_LAST)
+		win.Bind(wx.EVT_MENU_RANGE, changeIndent, id=ID_INDENT_TABS, id2=ID_INDENT_TABS+8)
 		self.component = self.editor = TextEditor(parent, self, self.wrap)
 		self.editor.SetEditable(not self.readOnly)
-		self.editor.SetAcceleratorTable(wx.AcceleratorTable(ACCELERATOR_TABLE))
 		if hasattr(self, '_text') and self._text: self.editor.SetValue(self._text); del self._text
 		return self.component
 	
@@ -174,8 +178,7 @@ class TextDocument(Document):
 		parent.InsertPage(i, self.component, self.name, i==cur)
 	
 	def canDo(self, id):
-		if self.readOnly and id in (wx.ID_SAVE, wx.ID_SAVEAS, wx.ID_REVERT, wx.ID_CUT, wx.ID_PASTE, wx.ID_UNDO, wx.ID_REDO, wx.ID_REPLACE, ID_AUTOFORMAT): return False
-		elif id==ID_AUTOFORMAT: return any(hasattr(tt, 'autoformat') for tt in self.types)
+		if self.readOnly and id in (wx.ID_SAVE, wx.ID_SAVEAS, wx.ID_REVERT, wx.ID_CUT, wx.ID_PASTE, wx.ID_UNDO, wx.ID_REDO, wx.ID_REPLACE): return False
 		else: return True
 	
 	def onFocus(self):
@@ -189,65 +192,17 @@ class TextDocument(Document):
 		menubar.Check(ID_INDENT_TABS+self.indent, True)
 		menubar.Check(ID_AUTOWRAP, self.wrap)
 		menubar.Check(ID_READONLY, self.readOnly)
-		for id in (ID_AUTOFORMAT, ID_READONLY, ID_AUTOWRAP): menubar.Enable(id, self.canDo(id))
+		for id in (ID_READONLY, ID_AUTOWRAP): menubar.Enable(id, self.canDo(id))
 	
 	def getSpecificMenus(self):
-		return [(getFormatMenu(), translate('formatMenu'))]
+		return [('formatMenu', FORMAT_MENU + utils.flatten((tt.getFormatMenuSpecificItems() for tt in self.types), tuple, 1))] + utils.flatten((tt.getSpecificMenus() for tt in self.types), list, 1)
+	
+	def getEditMenuSpecificItems(self):
+		return utils.flatten((tt.getEditMenuSpecificItems() for tt in self.types), tuple, 1)
+	
+	def getFileMenuSpecificItems(self):
+		return utils.flatten((tt.getFileMenuSpecificItems() for tt in self.types), tuple, 1)
 
-
-ID_ENC_DEFAULT = 6000
-ID_ENC_UTF8 = 6001
-ID_ENC_UTF8_BOM = 6002
-ID_ENC_UTF16LE = 6003
-ID_ENC_UTF16BE = 6004
-ID_ENC_LEGACY_DEFAULT = 6007
-ID_ENC_OTHER=6256
-ID_INDENT_TABS = 6280
-ID_LE_CRLF = 6290
-ID_LE_LF = 6291
-ID_LE_CR = 6292
-ID_AUTOWRAP = 6279
-ID_READONLY = 6278
-ID_AUTOFORMAT = 6277
-ID_ENC_FIRST = ID_ENC_DEFAULT
-ID_ENC_LAST = ID_ENC_OTHER -1
-ID_LE_FIRST = ID_LE_CRLF
-ID_LE_LAST = ID_LE_CR+1
-
-FORMAT_MENU = None
-ACCELERATOR_TABLE = []
-def getFormatMenu():
-	global FORMAT_MENU, ACCELERATOR_TABLE
-	if FORMAT_MENU is None:
-		FORMAT_MENU, encodings, lineEndings, indent  = wx.Menu(), wx.Menu(), wx.Menu(), wx.Menu()
-		MenuManager.addItems(lineEndings, table=ACCELERATOR_TABLE, items=(
-			('LE_CRLF', ID_LE_CRLF, wx.ITEM_RADIO, True),
-			('LE_LF', ID_LE_LF, wx.ITEM_RADIO),
-			('LE_CR',  ID_LE_CR, wx.ITEM_RADIO)
-		))
-		MenuManager.addItems(encodings, table=ACCELERATOR_TABLE, items=(
-			('enc-'+TextFormat.defaultEncoding, ID_ENC_DEFAULT, wx.ITEM_RADIO, True),
-			('enc-utf-8', ID_ENC_UTF8 if TextFormat.defaultEncoding!='utf-8' else wx.ID_NONE, wx.ITEM_RADIO),
-			('enc-utf-8-sig', ID_ENC_UTF8_BOM, wx.ITEM_RADIO),
-			('enc-utf-16-le', ID_ENC_UTF16LE, wx.ITEM_RADIO),
-			('enc-utf-16-be', ID_ENC_UTF16BE, wx.ITEM_RADIO),
-			('enc-'+TextFormat.legacyEncoding, ID_ENC_LEGACY_DEFAULT, wx.ITEM_RADIO),
-			(encodingDialog, ID_ENC_OTHER)
-		))
-		indent.AppendRadioItem(ID_INDENT_TABS, translate('indentTabs'), translate('indentTabsHelp'))
-		for i in range(2, 9): indent.AppendRadioItem(ID_INDENT_TABS+i, translate('indentSpaces').format(i))
-		FORMAT_MENU.AppendSubMenu(encodings, translate('encoding'))
-		FORMAT_MENU.AppendSubMenu(lineEndings, translate('lineEnding'))
-		FORMAT_MENU.AppendSubMenu(indent, translate('indentation'))
-		MenuManager.addItems(FORMAT_MENU, table=ACCELERATOR_TABLE, items=(
-			(autoformat, ID_AUTOFORMAT),
-			(toggleAutoWrap, ID_AUTOWRAP, wx.ITEM_CHECK, False),
-			(toggleReadOnly, ID_READONLY, wx.ITEM_CHECK, False)
-		))
-		win.Bind(wx.EVT_MENU_RANGE, changeEncoding, id=ID_ENC_FIRST, id2=ID_ENC_LAST)
-		win.Bind(wx.EVT_MENU_RANGE, changeLineEnding, id=ID_LE_FIRST, id2=ID_LE_LAST)
-		win.Bind(wx.EVT_MENU_RANGE, changeIndent, id=ID_INDENT_TABS, id2=ID_INDENT_TABS+8)
-	return FORMAT_MENU
 
 def encodingDialog(e=None):
 	lst = [(x, translate('enc-'+x.replace('_', '-').lower())) for x in TextFormat.allEncodings]
@@ -276,10 +231,46 @@ def toggleReadOnly(e=None):
 	win.onPageChanged(win.nbctl)
 	win.document.onFocus()
 
-def autoformat(e=None):
-	self = win.document
-	if self.readOnly: return
-	text = self.editor.GetValue()
-	text = functools.reduce(lambda tx, tp: tp.autoformat(tx, self) if hasattr(tp, 'autoformat') else tx, self.types, text)
-	self.editor.SetValue(text)
-	
+
+ID_ENC_DEFAULT = 6000
+ID_ENC_UTF8 = 6001
+ID_ENC_UTF8_BOM = 6002
+ID_ENC_UTF16LE = 6003
+ID_ENC_UTF16BE = 6004
+ID_ENC_LEGACY_DEFAULT = 6007
+ID_ENC_OTHER=6256
+ID_INDENT_TABS = 6280
+ID_LE_CRLF = 6290
+ID_LE_LF = 6291
+ID_LE_CR = 6292
+ID_AUTOWRAP = 6279
+ID_READONLY = 6278
+ID_ENC_FIRST = ID_ENC_DEFAULT
+ID_ENC_LAST = ID_ENC_OTHER -1
+ID_LE_FIRST = ID_LE_CRLF
+ID_LE_LAST = ID_LE_CR+1
+
+ENCODING_MENU = (
+	('enc-'+TextFormat.defaultEncoding, ID_ENC_DEFAULT, wx.ITEM_RADIO, True),
+	('enc-utf-8', ID_ENC_UTF8 if TextFormat.defaultEncoding!='utf-8' else wx.ID_NONE, wx.ITEM_RADIO),
+	('enc-utf-8-sig', ID_ENC_UTF8_BOM, wx.ITEM_RADIO),
+	('enc-utf-16-le', ID_ENC_UTF16LE, wx.ITEM_RADIO),
+	('enc-utf-16-be', ID_ENC_UTF16BE, wx.ITEM_RADIO),
+	('enc-'+TextFormat.legacyEncoding, ID_ENC_LEGACY_DEFAULT, wx.ITEM_RADIO),
+	(encodingDialog, ID_ENC_OTHER)
+)
+
+FORMAT_MENU = (
+	('lineEnding', (
+		('LE_CRLF', ID_LE_CRLF, wx.ITEM_RADIO, True),
+		('LE_LF', ID_LE_LF, wx.ITEM_RADIO),
+		('LE_CR',  ID_LE_CR, wx.ITEM_RADIO)
+	)), ('encoding', ENCODING_MENU),
+	('indentation', (
+		('indentTabs', ID_INDENT_TABS, wx.ITEM_RADIO, True),
+		*((('indentSpaces', i), ID_INDENT_TABS+i, wx.ITEM_RADIO) for i in range(2,9))
+	)),
+	(toggleAutoWrap, ID_AUTOWRAP, wx.ITEM_CHECK, False),
+	(toggleReadOnly, ID_READONLY, wx.ITEM_CHECK, False)
+)
+

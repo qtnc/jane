@@ -1,0 +1,9 @@
+[default]
+mvn clean=C&lean
+mvn compile=&Compile
+mvn package=&Package
+mvn install=&Install
+mvn clean install=Clean i&nstall
+mvn clean package=Clean pac&kage
+mvn test=&Test
+mvnAutoImport=Organize imports

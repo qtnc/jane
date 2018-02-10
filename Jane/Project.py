@@ -9,6 +9,7 @@ class Project:
 	def __init__ (self, root, facets=None):
 		self.root=root
 		self.facets=facets or []
+		self.acceleratorTable = []
 	
 	def open(self):
 		for facet in self.facets: facet.open(self)

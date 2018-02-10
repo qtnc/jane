@@ -6,22 +6,13 @@ from FacetFactory import FacetFactory
 from TextType import TextType
 from TextDocument import TextDocument
 
-MVN_PATH = Path(app.config.get('maven', 'mavenPath'), 'bin', 'mvn.cmd' if os.name=='nt' else 'mvn')
-MVN_REPO_PATH = Path(app.config.get('maven', 'repositoryPath'))
-JAVA_PATH = Path(app.config.get('maven', 'javaPath'))
-ONSAVE = app.config.getboolean('maven', 'autoImportOnSave', fallback=False)
-MVN_GOAL_ACTIONS = ('clean', 'compile', 'test', 'package', 'install', 'clean package', 'clean install')
-MVN_LOCAL_CACHE_FILENAME = '.mvn-jane-local-cache'
-MVN_MENU = None
-MVN_ACCELERATOR_TABLE = []
-
 @FacetFactory
 def mavenFacetFactory(path):
 	return MavenFacet() if Path(path, 'pom.xml').exists() else None
 
 class MavenFacet(Facet):
 	def getSpecificMenus(self):
-		return [(getMvnMenu(), translate('Maven'))]
+		return [('Maven', MVN_MENU)]
 	
 	def open(self, project):
 		self.root = project.root
@@ -117,12 +108,20 @@ def mvnAutoImport(self):
 	text = text[:ipos] + '\n' + '\n'.join(imports) + '\n' + text[ipos:]
 	editor.SetValue(text)
 
-def getMvnMenu():
-	global MVN_MENU
-	if MVN_MENU is not None: return MVN_MENU
-	MVN_MENU = wx.Menu()
-	MenuManager.addItems(MVN_MENU, table=MVN_ACCELERATOR_TABLE, items=((mvnGoalActionFunc(goal), wx.ID_ANY) for goal in MVN_GOAL_ACTIONS))
-	MenuManager.addItems(MVN_MENU, table=MVN_ACCELERATOR_TABLE, items=[
-		(mvnAutoImport, wx.ID_ANY)
-	])
-	return MVN_MENU
+
+app.loadTranslation('MavenFacet')
+app.loadConfig('MavenFacet')
+
+MVN_PATH = Path(app.config.get('maven', 'mavenPath'), 'bin', 'mvn.cmd' if os.name=='nt' else 'mvn')
+MVN_REPO_PATH = Path(app.config.get('maven', 'repositoryPath'))
+JAVA_PATH = Path(app.config.get('maven', 'javaPath'))
+ONSAVE = app.config.getboolean('maven', 'autoImportOnSave', fallback=False)
+MVN_GOAL_ACTIONS = tuple(x.strip() for x  in app.config.get('maven', 'goals', fallback='clean, compile, test, package, install, clean package, clean install') .split(','))
+MVN_LOCAL_CACHE_FILENAME = '.mvn-jane-local-cache'
+
+MVN_MENU = (
+	*((mvnGoalActionFunc(goal), wx.ID_ANY) for goal in MVN_GOAL_ACTIONS),
+	(mvnAutoImport, wx.ID_ANY)
+)
+
+

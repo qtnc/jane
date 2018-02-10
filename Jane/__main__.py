@@ -14,7 +14,7 @@ class Application(wx.App):
 		self.dir = executablePath.parent.resolve()
 		sys.path.append(os.path.dirname(sys.argv[0]))
 		self.loadCmdlineArgs()
-		self.loadConfig()
+		self.loadConfigs()
 		self.loadTranslations()
 		self.win = MainWindow(parent=None, title=app.name)
 		__builtins__.__dict__['win'] = self.win
@@ -34,7 +34,7 @@ class Application(wx.App):
 		parser.add_argument('files', nargs='*')
 		self.cmdargs = parser.parse_args()
 
-	def loadConfig(self):
+	def loadConfigs(self):
 		self.configDir = configDir = Path(wx.StandardPaths.Get().GetUserConfigDir(), app.name)
 		self.config = ConfigParser(default_section='global', allow_no_value=True, empty_lines_in_values=False, strict=True, interpolation=ExtendedInterpolation())
 		self.config.optionxform = str
@@ -43,10 +43,17 @@ class Application(wx.App):
 			str(Path(app.dir, app.name+'.ini'))
 		))
 	
+	def loadConfig(self, mod):
+		self.config.read((
+		str(Path(self.configDir, mod+'.ini')),
+			str(Path(app.dir, mod+'.ini')),
+			str(Path(app.dir, 'plugins', mod+'.ini'))
+		))
+	
 	def loadTranslations(self):
 		self.lang = lang = wx.Locale.GetLanguageCanonicalName(wx.Locale.GetSystemLanguage())
 		locale = wx.Locale(language=wx.Locale.GetSystemLanguage())
-		translations = ConfigParser(default_section='default', empty_lines_in_values=False, strict=True, interpolation=ExtendedInterpolation())
+		self.translationsrep = translations = ConfigParser(default_section='default', empty_lines_in_values=False, strict=True, interpolation=ExtendedInterpolation())
 		translations.optionxform = str
 		translations.read((
 			str(Path(app.dir, app.name+'.lng')),
@@ -57,6 +64,16 @@ class Application(wx.App):
 		elif translations.has_section(lang[0:2]): self.translations = translations[lang[0:2]]
 		else: self.translations = translations.defaults()
 		__builtins__.__dict__['translate'] = self.translate #wx.GetTranslation 
+	
+	def loadTranslation(self, mod):
+		self.translationsrep.read((
+			str(Path(app.dir, 'plugins', mod+'.lng')),
+			str(Path(app.dir, 'plugins', mod +'_' + self.lang[0:2] + '.lng')),
+			str(Path(app.dir, 'plugins', mod +'_' + self.lang + '.lng')),
+			str(Path(app.dir, 'plugins', mod, mod+'.lng')),
+			str(Path(app.dir, 'plugins', mod, mod +'_' + self.lang[0:2] + '.lng')),
+			str(Path(app.dir, 'plugins', mod, mod +'_' + self.lang + '.lng'))
+		))
 	
 	def loadPlugins(self):
 		plugins = ()

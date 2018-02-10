@@ -10,8 +10,15 @@ ONLOAD = app.config.getboolean('astyle', 'autoformatOnLoad', fallback=False)
 class Astyle(DefaultType):
 	def onSave (self, text, doc):
 		return self.autoformat(text, doc) if ONSAVE else text
+	
 	def onLoad (self, text, doc):
 		return self.autoformat(text, doc) if ONLOAD else text
+	
+	def getFormatMenuSpecificItems(self):
+		return (
+			(autoformat, ID_AUTOFORMAT),
+		)
+	
 	def autoformat(self, text, doc):
 		indent = '-t' if doc.indent==0 else '-s'+str(doc.indent)
 		mode = 'c'
@@ -20,3 +27,16 @@ class Astyle(DefaultType):
 		proc = subprocess.run('"{0}" --mode={1} {2} {3}'.format(ASTYLE_PATH, mode, indent, ASTYLE_OPTIONS), encoding='utf-8', errors='replace', cwd=doc.file.parent if doc and doc.file else None, input=text, stdout=subprocess.PIPE, check=True, universal_newlines=True)
 		return proc.stdout
 
+
+
+ID_AUTOFORMAT = 6277
+
+def autoformat(e=None):
+	doc = win.document
+	astyle = doc.getTextType(Astyle)
+	editor = doc.editor
+	text = editor.GetValue()
+	start, end = editor.GetSelection2()
+	text = astyle.autoformat(text, doc)
+	editor.SetValue(text)
+	editor.SetSelection(start, end)

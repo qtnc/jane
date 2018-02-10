@@ -246,8 +246,9 @@ class MainWindow(wx.Frame):
 		self.Close()
 	
 	def test(self, e=None):
-		scd = SingleChoiceDialog(win, 'Test message', 'Test title', ('One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'))
-		scd.Show()
+		print('test is called !')
+	def test2(self, e=None):
+		print('test2 is called !')
 	
 	def updateWindowTitle (self, doc=None, modified=None):
 		if not doc: doc = self.document
@@ -268,6 +269,7 @@ class MainWindow(wx.Frame):
 	def onPageChanged (self, e):
 		if self.ignorePageChanged: return
 		selection = e.GetSelection()
+		page = self.nbctl.GetPage(selection)
 		doc = self.documents[selection]
 		oldDoc = self.documents[self.oldSelection] if self.oldSelection>=0 else None
 		self.oldSelection = selection
@@ -276,19 +278,17 @@ class MainWindow(wx.Frame):
 		menubar = self.GetMenuBar()
 		docMenus = doc.getSpecificMenus()
 		oldDocMenus = oldDoc.getSpecificMenus() if oldDoc else ()
-		if oldDocMenus!=docMenus:
-			for i in range(1+len(oldDocMenus), 1, -1): menubar.Remove(i)
-			for i, it in enumerate(docMenus, 2): menubar.Insert(i, it[0], it[1])
+		if oldDocMenus!=docMenus: doc.acceleratorTable=[]; MenuManager.spliceMenus(menubar, 2, len(oldDocMenus), docMenus, doc.acceleratorTable)
 		if oldProject!=project:
 			projMenus = project.getSpecificMenus() if project else ()
 			oldProjMenus = oldProject.getSpecificMenus() if oldProject else ()
-			if oldProjMenus!=projMenus:
-				pmIndex = 2 + len(docMenus)
-				for i in range(pmIndex+len(oldProjMenus) -1, pmIndex -1, -1): menubar.Remove(i)
-				for i, it in enumerate(projMenus, pmIndex): menubar.Insert(i, it[0], it[1])
+			if oldProjMenus!=projMenus: project.acceleratorTable=[]; MenuManager.spliceMenus(menubar, 2+len(docMenus), len(oldProjMenus), projMenus, project.acceleratorTable)
+		MenuManager.replaceItems(menubar.GetMenu(0), len(FILE_MENU) -1, -1, doc.getFileMenuSpecificItems(), doc.acceleratorTable)
+		MenuManager.replaceItems(menubar.GetMenu(1), len(EDIT_MENU), None, doc.getEditMenuSpecificItems(), doc.acceleratorTable)
 		for name, id in EDIT_MENU: menubar.Enable(id, hasattr(doc, name) and callable(getattr(doc, name)) and doc.canDo(id))
 		for name, id in FILE_MENU: menubar.Enable(id, doc.canDo(id))
 		menubar.Refresh()
+		page.SetAcceleratorTable(wx.AcceleratorTable(doc.acceleratorTable + (project.acceleratorTable if project else [])))
 		doc.onFocus()
 	
 	def onActivate(self, e):

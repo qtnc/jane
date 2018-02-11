@@ -27,6 +27,7 @@ reloadDocument=&Recharger
 saveDocument=&Enregistrer
 saveDocumentAs=Enregistrer &sous...
 closeDocument=&Fermer
+recentFilesMenu=Fichiers r&écents
 exit=&Quitter
 encoding=&Encodage
 lineEnding=Fins de &ligne

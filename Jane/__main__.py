@@ -118,7 +118,19 @@ class Application(wx.App):
 			return result
 		finally:
 			cb.Close()
-
+	
+	def SetClipboardFiles (self, files):
+		cb = wx.Clipboard.Get()
+		if not cb or not cb.Open(): return False
+		try:
+			fdo = wx.FileDataObject()
+			for f in files: fdo.AddFile(str(f))
+			result = cb.SetData(fdo)
+			cb.Flush()
+			return result
+		finally:
+			cb.Close()
+	
 	def GetClipboardText (self):
 		cb = wx.Clipboard.Get()
 		if not cb or not cb.Open(): return None
@@ -127,7 +139,16 @@ class Application(wx.App):
 			return tdo.GetText() if cb.GetData(tdo) else None
 		finally:
 			cb.Close()
-
+	
+	def GetClipboardFiles (self):
+		cb = wx.Clipboard.Get()
+		if not cb or not cb.Open(): return None
+		try:
+			fdo = wx.FileDataObject()
+			return [Path(f) for f in fdo.GetFilenames()] if cb.GetData(fdo) else None
+		finally:
+			cb.Close()
+	
 def writeOnClose (doc, fileno):
 	def close():
 		try:

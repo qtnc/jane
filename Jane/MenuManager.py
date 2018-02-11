@@ -77,5 +77,8 @@ def replaceMenus (menubar, start=0, end=None, items=(), table=None, handlerobj=N
 	deleteMenus(menubar, start, end)
 	return addMenus(menubar, items, start, table, handlerobj, binder)
 
+def spliceItems (menu, start=0, count=0, items=(), table=None, handlerobj=None, binder=None):
+	return replaceItems(menu, start, start+count, items, table, handlerobj, binder)
+
 def spliceMenus (menubar, start=0, count=0, items=(), table=None, handlerobj=None, binder=None):
 	return replaceMenus(menubar, start, start+count, items, table, handlerobj, binder)

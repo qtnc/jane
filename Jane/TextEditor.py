@@ -480,6 +480,10 @@ class TextEditor(wx.TextCtrl):
 	
 	def onPaste (self, e=None):
 		text = app.GetClipboardText()
+		if text is None:
+			files = app.GetClipboardFiles()
+			if files: text = '\n'.join(str(f) for f in files)
+		if text is None: return bellFalsy(False)
 		curline = self.GetLineText(self.GetLine())
 		curbol = rbol(curline)
 		lines = text.splitlines()

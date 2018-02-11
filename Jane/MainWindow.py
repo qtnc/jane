@@ -42,6 +42,10 @@ EDIT_MENU = (
 	 ('findPrev', ID_FIND_PREV)
 )
 
+HELP_MENU = (
+	('about', wx.ID_ABOUT),
+)
+
 class MainWindow(wx.Frame):
 	@property
 	def document (self):
@@ -52,6 +56,8 @@ class MainWindow(wx.Frame):
 		self.documents = []
 		self.documentsByPath = {}
 		self.untitledCount = 0
+		self.recentFiles = []
+		self.recentFilesMenu = None
 		self.closing = False
 		self.ignorePageChanged = False
 		self.oldSelection = -1
@@ -59,13 +65,12 @@ class MainWindow(wx.Frame):
 	def initUI (self):
 		table = []
 		menubar = wx.MenuBar()
-		file, edit, fmt, help = wx.Menu(), wx.Menu(), wx.Menu(), wx.Menu()
-		MenuManager.addItems(file, table=table, items=FILE_MENU)
-		MenuManager.addItems(edit, table=table, items=EDIT_MENU)
-		MenuManager.addItem(help, 'about', wx.ID_ABOUT)
-		menubar.Append(file, translate('fileMenu'))
-		menubar.Append(edit, translate('editMenu'))
-		menubar.Append(help, translate('helpMenu'))
+		MenuManager.addMenus(menubar, table=table, items=[
+			('fileMenu', FILE_MENU),
+		('editMenu', EDIT_MENU),
+		('helpMenu', HELP_MENU)
+		])
+		self.updateRecentFilesMenu()
 		self.SetMenuBar(menubar)
 		self.SetAcceleratorTable(wx.AcceleratorTable(table))
 		status = self.CreateStatusBar()
@@ -75,10 +80,15 @@ class MainWindow(wx.Frame):
 		self.nbctl.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.onPageChanging)
 		self.Bind(wx.EVT_CLOSE, self.onClose, source=self)
 		self.Bind(wx.EVT_ACTIVATE, self.onActivate, source=self)
+		self.Bind(wx.EVT_MENU_RANGE, self.openRecentDocument, id=wx.ID_FILE1, id2=wx.ID_FILE9)
 	
 	def addDocument (self, doc):
 		self.documents.append(doc)
-		if doc.file: self.documentsByPath[doc.file]=doc
+		if doc.file:
+			self.documentsByPath[doc.file]=doc
+			if doc.file in self.recentFiles: self.recentFiles.remove(doc.file)
+			self.recentFiles.insert(0, doc.file)
+			self.updateRecentFilesMenu()
 		doc.open()
 		doc.component = doc.createUI(self.nbctl)
 		self.nbctl.AddPage(doc.component, text=doc.name, select=True)
@@ -140,6 +150,9 @@ class MainWindow(wx.Frame):
 		if not doc.save(file): return False
 		self.nbctl.SetPageText(index, doc.name)
 		if index==self.nbctl.GetSelection(): self.updateWindowTitle(doc)
+		if doc.file in self.recentFiles: self.recentFiles.remove(doc.file)
+		self.recentFiles.insert(0, doc.file)
+		self.updateRecentFilesMenu()
 		return True
 	
 	def saveDocument (self, e=None):
@@ -171,6 +184,10 @@ class MainWindow(wx.Frame):
 	def reloadDocument(self, e=None):
 		doc, index = self.getDocument(e)
 		doc.open(reloading=True)
+	
+	def openRecentDocument(self, e):
+		i = e if isinstance(e,int) else e.GetId() -wx.ID_FILE1
+		self.openDocument(str(self.recentFiles[i]))
 	
 	def newDocument (self, e=None, type=None, name=None, file=None, data=None, *args, **kwargs):
 		if not name and not file:
@@ -255,6 +272,16 @@ class MainWindow(wx.Frame):
 		if modified is None: modified = doc.isModified()
 		self.SetTitle(translate('winTitle').format(name=doc.name, file=doc.file or doc.name, appName=app.name, mod='*' if modified else ''))
 	
+	def updateRecentFilesMenu(self):
+		if not self.recentFilesMenu:
+			menubar = self.GetMenuBar()
+			if not menubar: return
+			self.recentFilesMenu = wx.Menu()
+			menubar.GetMenu(0).Insert(7, wx.ID_ANY, translate('recentFilesMenu'), self.recentFilesMenu, translate('recentFilesMenuHelp', None))
+		MenuManager.replaceItems(self.recentFilesMenu, 0, None, 
+		(('{pos} - {name} ({path})' .format(pos=i+1, name=f.name, path=str(f)), wx.ID_FILE1+i) for i, f in enumerate(self.recentFiles[:9]))
+		)
+	
 	def showContextMenu (self, options):
 		menu = wx.Menu()
 		for id, label in enumerate(options, 1): menu.Append(id, label)
@@ -283,7 +310,7 @@ class MainWindow(wx.Frame):
 			projMenus = project.getSpecificMenus() if project else ()
 			oldProjMenus = oldProject.getSpecificMenus() if oldProject else ()
 			if oldProjMenus!=projMenus: project.acceleratorTable=[]; MenuManager.spliceMenus(menubar, 2+len(docMenus), len(oldProjMenus), projMenus, project.acceleratorTable)
-		MenuManager.replaceItems(menubar.GetMenu(0), len(FILE_MENU) -1, -1, doc.getFileMenuSpecificItems(), doc.acceleratorTable)
+		MenuManager.replaceItems(menubar.GetMenu(0), len(FILE_MENU), -1, doc.getFileMenuSpecificItems(), doc.acceleratorTable)
 		MenuManager.replaceItems(menubar.GetMenu(1), len(EDIT_MENU), None, doc.getEditMenuSpecificItems(), doc.acceleratorTable)
 		for name, id in EDIT_MENU: menubar.Enable(id, hasattr(doc, name) and callable(getattr(doc, name)) and doc.canDo(id))
 		for name, id in FILE_MENU: menubar.Enable(id, doc.canDo(id))

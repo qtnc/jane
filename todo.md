@@ -1,6 +1,5 @@
 # To do list
 
-- Add a menu with the most recent files opened
 - Reopen files that were left open at last session
 - Add more configurable options in configuration file
 - Add support for UTF-16 and UTF-32 encodings with explicit endianess

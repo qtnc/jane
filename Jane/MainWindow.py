@@ -263,9 +263,9 @@ class MainWindow(wx.Frame):
 		self.Close()
 	
 	def test(self, e=None):
-		print('test is called !')
-	def test2(self, e=None):
-		print('test2 is called !')
+		from TestDialog import TestDialog
+		with TestDialog(self, 'Test dialog', 'Here is an example') as dlg:
+			dlg.ShowModal()
 	
 	def updateWindowTitle (self, doc=None, modified=None):
 		if not doc: doc = self.document

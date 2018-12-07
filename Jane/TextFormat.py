@@ -57,8 +57,8 @@ def detectIndent (data, reg=re.compile(rb'^([\t ]+)', re.M)):
 
 def detectEncoding (data):
 	if data[0:3]==b'\xEF\xBB\xBF': return 'utf-8-sig'
-	elif data[0:2]==b'\xEF': return 'utf-16-le'
-	elif data[0:2]==b'\xFF\xEF': return 'utf-16-be'
+	elif data[0:2]==b'\xFF\xFE': return 'utf-16-le'
+	elif data[0:2]==b'\xFE\xFF': return 'utf-16-be'
 	elif len(data)>=6 and data[1]==0 and data[3]==0 and data[5]==0: return 'utf-16-le'
 	elif len(data)>=6 and data[0]==0 and data[2]==0 and data[4]==0: return 'utf-16-be'
 	for m in re.finditer(b'[\x80-\xFF]+', data):

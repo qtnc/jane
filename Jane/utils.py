@@ -16,20 +16,6 @@ class OrderedSet(MutableSet):
 	def __eq__(self,o): return set(o)==self.set
 	def __repr__(self): return self.list.__repr__()
 
-s = OrderedSet([5,4,3,2,1])
-print(s)
-s.add(6)
-print(s)
-s.remove(5)
-print(s)
-del s[0]
-print(s)
-s.add(5)
-print(s)
-s.push(5)
-print(s)
-print([x**2 for x in s])
-
 class Object:
 	def __init__(self, **kwargs):
 		for k, v in kwargs.items(): setattr(self,k,v)

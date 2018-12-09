@@ -31,7 +31,7 @@ class Document:
 		if not file: file=self.file
 		if not file: return False
 		self.file=file
-		self.project = ProjectFactory.getProjectOf(self.file)
+		self.project = Project.getProjectOf(self.file)
 		self.savable = True
 		try: self.props = editorconfig.get_properties(self.file)
 		except editorconfig.EditorConfigError: self.props = {}

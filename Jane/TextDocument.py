@@ -121,7 +121,7 @@ class TextDocument(Document):
 		else: return self.editor.findPrev()
 	
 	def jumpTo(self, arg):
-		if not arg: return False
+		if not arg: return True
 		m = re.match(r'^([:+-]?)(\d+)$', arg)
 		if m:
 			if not m[1] or m[1]==':': self.editor.SetInsertionPointXY(0, int(m[2]) -1); return True

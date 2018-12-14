@@ -19,11 +19,11 @@ Main distinctive features of Jane includes :
 * Use the powerful jump to feature and extended navigation shortcuts to quickly move between and within files in your development projects
 
 # Download (for users)
-You can download an early binary release for windows 7, 8 and 10, 64 bits at the link below.
-If you have still a 32-bit windows, or a Mac, sorry, but I don't have one myself, so you will have to build executables for your system yourself.
+You can download an early binary release for windows 7, 8 and 10, 32 bits at the link below.
+If you have a Mac, sorry, but I don't have one myself, so you will have to build executables for your system yourself.
 
 Note that it's still an extremely early alpha release. Some features are incomplete, and there are probably still a lot of bugs or inconsist behaviors. I wouldn't advise you to use it as your main text editor yet.
-Now that you are warned, you can [download Jane version 0.0 for Windows 7, 8 and 10 64-bit. Zip file of about 35 MB](http://vrac.quentinc.net/Jane-0.0.zip)
+Now that you are warned, you can [download Jane version 0.0 for Windows 7, 8 and 10 32-bit. Zip file of about 25 MB once uncompressed](http://vrac.quentinc.net/Jane-0.0.zip)
 
 Feel free to post your comments or bug reports.
 

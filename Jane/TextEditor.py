@@ -170,14 +170,15 @@ class TextEditor(wx.TextCtrl):
 	def updateStatus(self):
 		start, end = self.GetSelection()
 		_, sc, sl = self.PositionToXY(start)
+		last = max(1, self.GetLastPosition())
+		_, _, lineCount = self.PositionToXY(last)
 		if start==end:
-			last = max(1, self.GetLastPosition())
 			self.anchor=start
-			text = translate('txtStatus').format(sl+1, sc+1, round(100*start/last))
+			text = translate('txtStatus').format(startLine=sl+1, endLine=sl+1, startCol=sc+1, endCol=sc+1, percentage=round(100*start/last), lineCount=lineCount+1)
 		else:
 			_, ec, el = self.PositionToXY(end)
 			if self.anchor==end: sc, sl, ec, el = ec, el, sc, sl
-			text = translate('txtStatus2').format(sl+1, sc+1, el+1, ec+1)
+			text = translate('txtStatus2').format(startLine=sl+1, startCol=sc+1, endLine=el+1, endCol=ec+1, percentage=round(100*start/last), lineCount=lineCount+1)
 		win.SetStatusText(text)
 	
 	def findNext (self, reg=None):

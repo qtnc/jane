@@ -14,7 +14,7 @@ buildOptions = dict(
 	includes = ['editorconfig', 'natsort'],
 	zip_include_packages='*',
 	zip_exclude_packages=(),
-	include_files = [(file, path.basename(file)) for file in glob('../' + name + '*.*')] + [(file, path.basename(file) for file in glob('../plugins/**')],
+	include_files = [(file, path.basename(file)) for file in glob('../' + name + '*.*')] + [(file, path.basename(file)) for file in glob('../plugins/**')],
 	zip_includes = [],
 	include_msvcr = True
 )

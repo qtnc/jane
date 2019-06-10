@@ -21,7 +21,7 @@ FILE_MENU = (
 	('saveDocument', wx.ID_SAVE),
 	('saveDocumentAs', wx.ID_SAVEAS),
 	('closeDocument', wx.ID_CLOSE),
-	('test', ID_TEST),
+	#('test', ID_TEST),
 	('exit', wx.ID_EXIT)
 )
 
@@ -107,7 +107,7 @@ class MainWindow(wx.Frame):
 	
 	def closeDocument (self, e=None):
 		doc, index = self.getDocument(e)
-		if doc.savable and doc.isModified():
+		if doc.savable and not doc.readOnly and doc.isModified():
 			re = wx.MessageBox(translate('closeConfirm') .format(doc.name), translate('Question'), wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_EXCLAMATION, self)
 			if re==wx.CANCEL: return False
 			elif re==wx.YES and not self.saveDocument(e): return False
@@ -123,7 +123,11 @@ class MainWindow(wx.Frame):
 	
 	def runCommand (self, cmd, name=None):
 		curdoc = self.document
-		if curdoc: project=curdoc.project; cwd=curdoc.file.parent if curdoc.file else None
+		if curdoc:
+			project=curdoc.project
+			if project and project.root: cwd=project.root
+			elif curdoc.file: cwd=curdoc.file.parent
+			else: cwd=None
 		else: cwd = project = None
 		self.addDocument(DocumentFactory.newDocument(type='_subprocess', cmd=cmd, name=name, project=project, cwd=cwd))
 	
@@ -175,11 +179,11 @@ class MainWindow(wx.Frame):
 		if file in self.documentsByPath:
 			doc = self.documentsByPath[file]
 			self.nbctl.SetSelection(self.documents.index(doc))
-			doc.jumpTo(arg)
+			return doc.jumpTo(arg)
 		else:
 			doc = DocumentFactory.openDocument(file)
 			self.addDocument(doc)
-			doc.jumpTo(arg)
+			return doc.jumpTo(arg)
 	
 	def reloadDocument(self, e=None):
 		doc, index = self.getDocument(e)

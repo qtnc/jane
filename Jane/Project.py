@@ -22,12 +22,13 @@ class Project:
 	
 	def findFiles (self, fn, base=None):
 		name, ext = path.splitext(fn)
-		if base and not ext: pat  = '**/' + name + '*' + base.suffix
+		suffix = base.suffix if base else ''
+		if base and not ext: pat  = '**/' + name + '*' + suffix
 		else: pat = '**/' + fn
 		result = list(self.root.glob(pat))
 		if result: return result
-		if fn.islower(): pat = '**/' + '*'.join(fn) + '*' + base.suffix
-		else: pat = '**/' + '*'.join(re.findall(r'[A-Z][^A-Z]*', fn)) + '*' + base.suffix
+		if fn.islower(): pat = '**/' + '*'.join(fn) + '*' + suffix
+		else: pat = '**/' + '*'.join(re.findall(r'[A-Z][^A-Z]*', fn)) + '*' + suffix
 		result = list(self.root.glob(pat))
 		if result: return result
 		return ()

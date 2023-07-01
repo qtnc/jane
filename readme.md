@@ -2,6 +2,11 @@
 Jane is a text editor especially made to be accessible to screen readers.
 It is made in python 3 and is using wxPython for its GUI interface.
 
+# This project is no longer maintained
+This project is no longer maintained. See [NGPad](https://github.com/qtnc/ngpad) for a replacement.
+
+---------------
+
 Just another editor, why ? because it is just another trial after my two previous more or less failed attempts: [6pad](http://github.com/qtnc/6pad) in 2012-2013 and [6pad++](http://github.com/qtnc/6pad2) in 2015-2016.
 They worked, well, but C and then C++ were still difficult to master, and I used the Win32 API for GUI, what was also source of strange bugs that have never been solved.
 For this third attempt, I decided to start again from the beginning, doing everything in Python and by using the WXPython library for GUI.
